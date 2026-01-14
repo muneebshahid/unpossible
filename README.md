@@ -145,6 +145,15 @@ Each ralph works on its own branch and merges back to base:
 6. Ralph releases the task lock
 7. Repeat with next task
 
+## Known Limitations
+
+**Task Dependencies**: If Task B depends on Task A, a ralph working on Task B might implement both tasks, causing merge conflicts. In practice, ralphs handle these conflicts autonomously during rebase.
+
+**Possible improvements**:
+
+- Add `dependsOn` field to tasks.json and check dependencies before claiming
+- Enforce strict scope in prompt template to prevent task overstepping
+
 ## Inspiration
 
 The concept of spawning multiple AI agents called "ralphs" is inspired by [Geoffrey Huntley's original post](https://ghuntley.com/ralph/) about running parallel AI coding agents.

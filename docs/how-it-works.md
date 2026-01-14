@@ -110,6 +110,7 @@ Both ralphs are updating different tasks. Resolution:
 Before blindly resolving, the ralph should:
 
 1. **Find the conflicting commit**:
+
    ```bash
    git log --oneline origin/$BASE_BRANCH ^HEAD~1 -- <conflicted-file>
    ```
@@ -117,6 +118,7 @@ Before blindly resolving, the ralph should:
 2. **Identify which task the other ralph was implementing**
 
 3. **Understand their intent**:
+
    ```bash
    git show <commit-hash>  # See full diff and message
    ```
@@ -168,7 +170,7 @@ your-project/
 
 The orchestrator shows branch status:
 
-```
+```text
 Branch status:
   ralph-1: 3 commits ahead of main
   ralph-2: 2 commits ahead of main
