@@ -31,6 +31,8 @@ cp examples/prompt.template.md prompt.template.md
 
 Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git worktree, working on different tasks simultaneously. Ralphs coordinate through file-based locks to avoid working on the same task.
 
+**Success depends on task quality**: Each task must be atomic (completable independently) and verifiable (clear validation criteria). Well-defined tasks enable effective parallelization.
+
 ```
 your-project/
 ├── unpossible.config.json     # Configuration
@@ -79,31 +81,34 @@ Create `unpossible.config.json`:
 
 ## Tasks File
 
+**CRITICAL**: Unpossible's effectiveness depends entirely on task quality. Tasks must be small, atomic, and verifiable.
+
 Your tasks file should be a JSON array. Example:
 
 ```json
 [
   {
     "id": "TASK-001",
-    "title": "Add user authentication",
-    "description": "Implement login/logout",
-    "validation": "Run `npm test auth` and verify all tests pass",
+    "title": "Create user schema",
+    "description": "Add User table to schema.prisma with id, email, passwordHash, createdAt fields",
+    "validation": "Verify schema.prisma contains User model with all 4 fields",
     "done": false,
     "notes": ""
   },
   {
     "id": "TASK-002",
-    "title": "Create dashboard",
-    "description": "Build dashboard page",
+    "title": "Create login API endpoint",
+    "description": "Add POST /api/auth/login endpoint that accepts email/password and returns JWT",
+    "validation": "Test with curl: curl -X POST http://localhost:3000/api/auth/login -d '{\"email\":\"test@test.com\",\"password\":\"test123\"}' returns token",
     "done": false,
     "notes": ""
   }
 ]
 ```
 
-The field names are configurable via `taskIdField`, `taskCompleteField`, and `taskCompleteValue`.
+**Field Configuration**: `taskIdField`, `taskCompleteField`, and `taskCompleteValue` are configurable.
 
-**Optional `validation` field**: Specify commands or checks the ralph should run to verify the task (e.g., "Run tests", "Verify file exists"). If omitted, no specific validation is enforced.
+**Validation field** (highly recommended): Specify how the ralph should verify completion. Without validation, ralphs may mark incomplete work as done.
 
 ## Prompt Template
 

@@ -1,32 +1,33 @@
 [
   {
     "id": "TASK-001",
-    "title": "Add user authentication",
-    "description": "Implement login and logout functionality with session management",
-    "validation": "Run `npm test auth` and verify all authentication tests pass",
+    "title": "Create user schema",
+    "description": "Add User table to schema.prisma with id, email, passwordHash, createdAt fields",
+    "validation": "Verify schema.prisma contains User model with all 4 fields",
     "done": false,
     "notes": ""
   },
   {
     "id": "TASK-002",
-    "title": "Create dashboard page",
-    "description": "Build a dashboard showing user statistics and recent activity",
+    "title": "Create login API endpoint",
+    "description": "Add POST /api/auth/login endpoint that accepts email/password and returns JWT",
+    "validation": "Test with curl: curl -X POST http://localhost:3000/api/auth/login -d '{\"email\":\"test@test.com\",\"password\":\"test123\"}' returns token",
     "done": false,
     "notes": ""
   },
   {
     "id": "TASK-003",
-    "title": "Add API rate limiting",
-    "description": "Implement rate limiting middleware to prevent abuse",
-    "validation": "Test with `curl` to confirm 429 status after exceeding limit",
+    "title": "Add logout endpoint",
+    "description": "Add POST /api/auth/logout endpoint that invalidates JWT token",
+    "validation": "Verify endpoint returns 200 and subsequent requests with same token return 401",
     "done": false,
     "notes": ""
   },
   {
     "id": "TASK-004",
-    "title": "Write unit tests",
-    "description": "Add test coverage for core utility functions",
-    "validation": "Run `npm test` and verify coverage is above 80%",
+    "title": "Write auth unit tests",
+    "description": "Add tests for login/logout endpoints covering success and error cases",
+    "validation": "Run `npm test auth` and verify all tests pass with 100% coverage",
     "done": false,
     "notes": ""
   }
