@@ -52,7 +52,7 @@ This is race-condition-free because `mkdir` is atomic on Unix systems.
 
 Each ralph loops through:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  1. Read tasks.json, find pending tasks                 │
 │  2. Try to claim via mkdir (skip if already claimed)    │
@@ -71,7 +71,7 @@ Each ralph loops through:
 
 Each ralph: commit → rebase → ff-merge
 
-```
+```text
 Ralph 1:
   1. commit B on ralph-1 branch
   2. rebase onto base (A)
@@ -135,7 +135,7 @@ Before blindly resolving, the ralph should:
 
 ## File Structure
 
-```
+```text
 your-project/
 ├── unpossible.config.json         # Configuration
 ├── tasks.json                     # Task list
