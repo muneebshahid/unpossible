@@ -1,0 +1,244 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${CONFIG_FILE:-unpossible.config.json}"
+
+# Load configuration with defaults
+load_config() {
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: Config file not found: $CONFIG_FILE"
+    echo "Create one or specify with CONFIG_FILE=path/to/config.json"
+    exit 1
+  fi
+
+  TASKS_FILE=$(jq -r '.tasksFile // "tasks.json"' "$CONFIG_FILE")
+  TASKS_QUERY=$(jq -r '.tasksQuery // ".[]"' "$CONFIG_FILE")
+  TASK_ID_FIELD=$(jq -r '.taskIdField // "id"' "$CONFIG_FILE")
+  TASK_COMPLETE_FIELD=$(jq -r '.taskCompleteField // "done"' "$CONFIG_FILE")
+  TASK_COMPLETE_VALUE=$(jq -r '.taskCompleteValue // true' "$CONFIG_FILE")
+  PROMPT_TEMPLATE=$(jq -r '.promptTemplate // "prompt.template.md"' "$CONFIG_FILE")
+  BASE_BRANCH_CONFIG=$(jq -r '.baseBranch // ""' "$CONFIG_FILE")
+  RALPHS_DIR_NAME=$(jq -r '.ralphsDir // ".unpossible-ralphs"' "$CONFIG_FILE")
+  LOCKS_DIR_NAME=$(jq -r '.locksDir // ".unpossible-locks"' "$CONFIG_FILE")
+}
+
+# Cleanup function
+do_cleanup() {
+  echo "Cleaning up..."
+  git worktree prune 2>/dev/null || true
+
+  # Remove all ralph worktrees and branches
+  for dir in "$RALPHS_DIR"/ralph-*; do
+    if [ -d "$dir" ]; then
+      ralph_num=$(basename "$dir" | sed 's/ralph-//')
+      git worktree remove "$dir" --force 2>/dev/null || true
+      git branch -D "ralph-$ralph_num" 2>/dev/null || true
+    fi
+  done
+
+  rm -rf "$RALPHS_DIR" "$LOCKS_DIR" 2>/dev/null || true
+  echo "Cleanup complete"
+}
+
+# Show usage
+show_usage() {
+  echo "Usage: $0 <num_ralphs> [iterations_per_ralph]"
+  echo "       $0 clean    # Clean up worktrees and locks"
+  echo ""
+  echo "  num_ralphs: Number of parallel ralphs to spawn"
+  echo "  iterations_per_ralph: Max iterations per ralph (default: 10)"
+  echo ""
+  echo "Environment variables:"
+  echo "  CONFIG_FILE: Path to config file (default: unpossible.config.json)"
+}
+
+# Handle cleanup flag
+if [ "$1" = "clean" ] || [ "$1" = "--clean" ] || [ "$1" = "-c" ]; then
+  load_config
+  MAIN_WORKTREE="$(pwd)"
+  RALPHS_DIR="$MAIN_WORKTREE/$RALPHS_DIR_NAME"
+  LOCKS_DIR="$MAIN_WORKTREE/$LOCKS_DIR_NAME"
+  do_cleanup
+  exit 0
+fi
+
+if [ -z "$1" ]; then
+  show_usage
+  exit 1
+fi
+
+# Load configuration
+load_config
+
+NUM_RALPHS=$1
+ITERATIONS=${2:-10}
+MAIN_WORKTREE="$(pwd)"
+RALPHS_DIR="$MAIN_WORKTREE/$RALPHS_DIR_NAME"
+LOCKS_DIR="$MAIN_WORKTREE/$LOCKS_DIR_NAME"
+LOG_DIR="/tmp/claude/unpossible-logs"
+
+echo ""
+echo "=========================================="
+echo "  Unpossible - Starting $NUM_RALPHS ralphs"
+echo "=========================================="
+echo ""
+
+# Determine base branch
+if [ -n "$BASE_BRANCH_CONFIG" ]; then
+  BASE_BRANCH="$BASE_BRANCH_CONFIG"
+else
+  BASE_BRANCH=$(git branch --show-current)
+fi
+
+if [ "$BASE_BRANCH" != "$(git branch --show-current)" ]; then
+  echo "Note: Base branch is '$BASE_BRANCH', current branch is '$(git branch --show-current)'"
+fi
+
+echo "Base branch: $BASE_BRANCH"
+echo "Config file: $CONFIG_FILE"
+echo "Tasks file: $TASKS_FILE"
+
+# Validate required files
+if [ ! -f "$TASKS_FILE" ]; then
+  echo "Error: Tasks file not found: $TASKS_FILE"
+  exit 1
+fi
+
+if [ ! -f "$PROMPT_TEMPLATE" ]; then
+  echo "Error: Prompt template not found: $PROMPT_TEMPLATE"
+  exit 1
+fi
+
+# Clean up locks from previous runs
+if [ -d "$LOCKS_DIR" ]; then
+  echo "Cleaning up stale locks..."
+  rm -rf "$LOCKS_DIR"
+fi
+mkdir -p "$LOCKS_DIR"
+mkdir -p "$LOG_DIR"
+
+# Show pending count
+PENDING_COUNT=$(jq "[${TASKS_QUERY} | select(.${TASK_COMPLETE_FIELD} != ${TASK_COMPLETE_VALUE})] | length" "$TASKS_FILE" 2>/dev/null || echo "?")
+echo "Pending tasks: $PENDING_COUNT"
+echo ""
+
+# Set up worktrees
+echo "Setting up worktrees..."
+
+# Clean up any stale worktree references
+git worktree prune 2>/dev/null || true
+
+# Remove old worktrees and branches
+for dir in "$RALPHS_DIR"/ralph-*; do
+  if [ -d "$dir" ]; then
+    ralph_num=$(basename "$dir" | sed 's/ralph-//')
+    echo "  Removing existing worktree: ralph-$ralph_num"
+    git worktree remove "$dir" --force 2>/dev/null || true
+    git branch -D "ralph-$ralph_num" 2>/dev/null || true
+  fi
+done
+
+git worktree prune 2>/dev/null || true
+mkdir -p "$RALPHS_DIR"
+
+# Create fresh worktrees
+for ((i=1; i<=NUM_RALPHS; i++)); do
+  RALPH_DIR="$RALPHS_DIR/ralph-$i"
+  BRANCH_NAME="ralph-$i"
+
+  # Clean up branch if it exists
+  git branch -D "$BRANCH_NAME" 2>/dev/null || true
+
+  echo "  Creating worktree: ralph-$i (branch: $BRANCH_NAME)"
+  git worktree add "$RALPH_DIR" -b "$BRANCH_NAME" "$BASE_BRANCH"
+
+  # Symlink node_modules if it exists
+  if [ -d "$MAIN_WORKTREE/node_modules" ]; then
+    ln -s "$MAIN_WORKTREE/node_modules" "$RALPH_DIR/node_modules"
+  fi
+
+  # Symlink common env files
+  [ -f "$MAIN_WORKTREE/.env.local" ] && ln -s "$MAIN_WORKTREE/.env.local" "$RALPH_DIR/.env.local"
+  [ -f "$MAIN_WORKTREE/.env" ] && ln -s "$MAIN_WORKTREE/.env" "$RALPH_DIR/.env"
+done
+
+echo ""
+echo "Launching $NUM_RALPHS ralphs..."
+echo ""
+
+# Array to hold ralph PIDs
+declare -a RALPH_PIDS
+
+# Trap to clean up ralphs on exit
+cleanup() {
+  echo ""
+  echo "Shutting down ralphs..."
+  for pid in "${RALPH_PIDS[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+      kill "$pid" 2>/dev/null || true
+    fi
+  done
+  echo "Ralphs stopped"
+  echo ""
+  echo "Worktrees preserved at: $RALPHS_DIR"
+  echo "Run '$0 clean' to remove them"
+}
+trap cleanup EXIT INT TERM
+
+# Launch ralphs
+for ((i=1; i<=NUM_RALPHS; i++)); do
+  RALPH_ID="ralph-$i"
+  RALPH_DIR="$RALPHS_DIR/ralph-$i"
+
+  echo "  Starting ralph $i..."
+
+  MAIN_WORKTREE="$MAIN_WORKTREE" \
+  RALPH_DIR="$RALPH_DIR" \
+  BASE_BRANCH="$BASE_BRANCH" \
+  CONFIG_FILE="$CONFIG_FILE" \
+  LOCKS_DIR="$LOCKS_DIR" \
+  LOG_DIR="$LOG_DIR" \
+  "$SCRIPT_DIR/ralph.sh" "$RALPH_ID" "$ITERATIONS" &
+
+  RALPH_PIDS+=($!)
+done
+
+echo ""
+echo "All ralphs launched. Waiting for completion..."
+echo "Press Ctrl+C to stop all ralphs"
+echo ""
+
+# Wait for all ralphs to complete
+COMPLETED=0
+FAILED=0
+for pid in "${RALPH_PIDS[@]}"; do
+  if wait "$pid"; then
+    ((COMPLETED++))
+  else
+    ((FAILED++))
+  fi
+done
+
+echo ""
+echo "=========================================="
+echo "  Session Complete"
+echo "  Ralphs completed: $COMPLETED"
+echo "  Ralphs failed: $FAILED"
+echo "=========================================="
+
+# Show branch status
+echo ""
+echo "Branch status:"
+for ((i=1; i<=NUM_RALPHS; i++)); do
+  BRANCH_NAME="ralph-$i"
+  AHEAD=$(git rev-list --count "$BASE_BRANCH".."$BRANCH_NAME" 2>/dev/null || echo "?")
+  echo "  $BRANCH_NAME: $AHEAD commits ahead of $BASE_BRANCH"
+done
+
+echo ""
+echo "To merge all work:"
+echo "  for b in \$(git branch --list 'ralph-*'); do git merge \$b; done"
+
+# macOS notification
+osascript -e "display notification \"$COMPLETED ralphs completed, $FAILED failed\" with title \"Unpossible Complete\"" 2>/dev/null || true

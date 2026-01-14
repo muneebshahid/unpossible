@@ -1,0 +1,30 @@
+[
+  {
+    "id": "TASK-001",
+    "title": "Add user authentication",
+    "description": "Implement login and logout functionality with session management",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-002",
+    "title": "Create dashboard page",
+    "description": "Build a dashboard showing user statistics and recent activity",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-003",
+    "title": "Add API rate limiting",
+    "description": "Implement rate limiting middleware to prevent abuse",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-004",
+    "title": "Write unit tests",
+    "description": "Add test coverage for core utility functions",
+    "done": false,
+    "notes": ""
+  }
+]

@@ -1,0 +1,15 @@
+# Unpossible runtime directories
+.unpossible-ralphs/
+.unpossible-locks/
+
+# User config files (examples are in examples/ directory)
+/unpossible.config.json
+/tasks.json
+/prompt.template.md
+
+# Logs
+*.log
+
+# Editor directories
+.vscode/
+.idea/
