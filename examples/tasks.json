@@ -3,6 +3,7 @@
     "id": "TASK-001",
     "title": "Add user authentication",
     "description": "Implement login and logout functionality with session management",
+    "validation": "Run `npm test auth` and verify all authentication tests pass",
     "done": false,
     "notes": ""
   },
@@ -17,6 +18,7 @@
     "id": "TASK-003",
     "title": "Add API rate limiting",
     "description": "Implement rate limiting middleware to prevent abuse",
+    "validation": "Test with `curl` to confirm 429 status after exceeding limit",
     "done": false,
     "notes": ""
   },
@@ -24,6 +26,7 @@
     "id": "TASK-004",
     "title": "Write unit tests",
     "description": "Add test coverage for core utility functions",
+    "validation": "Run `npm test` and verify coverage is above 80%",
     "done": false,
     "notes": ""
   }

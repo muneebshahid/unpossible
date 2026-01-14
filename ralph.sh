@@ -97,12 +97,20 @@ build_prompt() {
   local prompt
   prompt=$(cat "$template_file")
 
+  # Extract validation steps from task JSON (if present)
+  local validation_steps
+  validation_steps=$(echo "$task_json" | jq -r '.validation // empty' 2>/dev/null)
+  if [ -z "$validation_steps" ] || [ "$validation_steps" = "null" ]; then
+    validation_steps="(No specific validation steps defined for this task)"
+  fi
+
   # Replace placeholders
   prompt="${prompt//\{\{TASK_ID\}\}/$task_id}"
   prompt="${prompt//\{\{RALPH_DIR\}\}/$RALPH_DIR}"
   prompt="${prompt//\{\{MAIN_DIR\}\}/$MAIN_WORKTREE}"
   prompt="${prompt//\{\{RALPH_BRANCH\}\}/$ralph_branch}"
   prompt="${prompt//\{\{BASE_BRANCH\}\}/$BASE_BRANCH}"
+  prompt="${prompt//\{\{VALIDATION_STEPS\}\}/$validation_steps}"
 
   # For TASK_JSON, we need to escape it properly for bash
   # Write to temp file and use sed for multi-line replacement

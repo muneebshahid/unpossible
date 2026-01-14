@@ -87,6 +87,14 @@ Your tasks file should be a JSON array. Example:
     "id": "TASK-001",
     "title": "Add user authentication",
     "description": "Implement login/logout",
+    "validation": "Run `npm test auth` and verify all tests pass",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-002",
+    "title": "Create dashboard",
+    "description": "Build dashboard page",
     "done": false,
     "notes": ""
   }
@@ -94,6 +102,8 @@ Your tasks file should be a JSON array. Example:
 ```
 
 The field names are configurable via `taskIdField`, `taskCompleteField`, and `taskCompleteValue`.
+
+**Optional `validation` field**: Specify commands or checks the ralph should run to verify the task (e.g., "Run tests", "Verify file exists"). If omitted, no specific validation is enforced.
 
 ## Prompt Template
 
@@ -103,6 +113,7 @@ Create a markdown file with placeholders that get replaced at runtime:
 |-------------|-------|
 | `{{TASK_ID}}` | Current task ID |
 | `{{TASK_JSON}}` | Full JSON object of current task |
+| `{{VALIDATION_STEPS}}` | Content of `validation` field (or default message if empty) |
 | `{{RALPH_DIR}}` | Ralph's worktree path |
 | `{{MAIN_DIR}}` | Main worktree path |
 | `{{RALPH_BRANCH}}` | Ralph's branch name |

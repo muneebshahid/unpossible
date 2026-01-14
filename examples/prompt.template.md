@@ -21,8 +21,15 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 
 1. Read and understand the task requirements
 2. Implement the changes needed
-3. Update the tasks file: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
-4. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
+3. Verify your implementation (see Validation section below)
+4. Update the tasks file: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
+5. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
+
+## Validation
+
+Before marking the task as done, verify your implementation:
+
+{{VALIDATION_STEPS}}
 
 ## After Committing: Rebase and Merge
 
