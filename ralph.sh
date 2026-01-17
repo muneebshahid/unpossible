@@ -19,7 +19,7 @@ load_config() {
     exit 1
   fi
 
-  TASKS_FILE=$(jq -r '.tasksFile // "tasks.json"' "$CONFIG_FILE")
+  TASKS_FILE=$(jq -r '.tasksFile // "prd.json"' "$CONFIG_FILE")
   TASKS_QUERY=$(jq -r '.tasksQuery // ".[]"' "$CONFIG_FILE")
   TASK_ID_FIELD=$(jq -r '.taskIdField // "id"' "$CONFIG_FILE")
   TASK_COMPLETE_FIELD=$(jq -r '.taskCompleteField // "done"' "$CONFIG_FILE")

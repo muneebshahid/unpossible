@@ -14,8 +14,8 @@ Run multiple Claude agents (ralphs) in parallel to work through a task list.
 # 1. Create your config file
 cp examples/unpossible.config.json unpossible.config.json
 
-# 2. Create your tasks file
-cp examples/tasks.json tasks.json
+# 2. Create your PRD file
+cp examples/prd.json prd.json
 
 # 3. Create a progress log (required)
 cp examples/progress.txt progress.txt
@@ -39,8 +39,8 @@ Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git 
 ```
 your-project/
 ├── unpossible.config.json     # Configuration
-├── tasks.json                 # Your task list
-├── progress.txt               # Append-only log of completed work
+├── prd.json                   # Your task list
+├── progress.txt               # Append-only log of completed work (required)
 ├── prompt.template.md         # Instructions for each ralph
 │
 ├── .unpossible-ralphs/        # Git worktrees (one per ralph)
@@ -59,7 +59,7 @@ Create `unpossible.config.json`:
 
 ```json
 {
-  "tasksFile": "tasks.json",
+  "tasksFile": "prd.json",
   "tasksQuery": ".[]",
   "taskIdField": "id",
   "taskCompleteField": "done",
@@ -73,7 +73,7 @@ Create `unpossible.config.json`:
 
 | Field | Description | Default |
 |-------|-------------|---------|
-| `tasksFile` | Path to JSON file with tasks | `tasks.json` |
+| `tasksFile` | Path to JSON file with tasks | `prd.json` |
 | `tasksQuery` | jq query to extract task array | `.[]` |
 | `taskIdField` | Field containing task ID | `id` |
 | `taskCompleteField` | Field indicating completion | `done` |
@@ -83,11 +83,11 @@ Create `unpossible.config.json`:
 | `ralphsDir` | Directory for worktrees | `.unpossible-ralphs` |
 | `locksDir` | Directory for locks | `.unpossible-locks` |
 
-## Tasks File
+## PRD File
 
 **CRITICAL**: Unpossible's effectiveness depends entirely on task quality. Tasks must be small, atomic, and verifiable.
 
-Your tasks file should be a JSON array. Example:
+Your `prd.json` file should be a JSON array. Example:
 
 ```json
 [
@@ -171,7 +171,7 @@ Each ralph works on its own branch and merges back to base:
 
 **Possible improvements**:
 
-- Add `dependsOn` field to tasks.json and check dependencies before claiming
+- Add `dependsOn` field to prd.json and check dependencies before claiming
 - Enforce strict scope in prompt template to prevent task overstepping
 
 ## Inspiration

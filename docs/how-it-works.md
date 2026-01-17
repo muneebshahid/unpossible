@@ -54,7 +54,7 @@ Each ralph loops through:
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│  1. Read tasks.json, find pending tasks                 │
+│  1. Read prd.json, find pending tasks                   │
 │  2. Try to claim via mkdir (skip if already claimed)    │
 │  3. Load prompt template, replace placeholders          │
 │  4. Run Claude with the prompt                          │
@@ -93,13 +93,13 @@ The rebase puts the ralph's commit on top of latest base, then `--ff-only` advan
 
 Multiple ralphs modify files simultaneously:
 
-- **tasks.json**: Every ralph updates task status
+- **prd.json**: Every ralph updates task status
 - **progress.txt**: Every ralph appends progress notes
 - **Source files**: Occasionally, if tasks touch related code
 
 ### Resolution Strategy
 
-#### tasks.json Conflicts (Easy)
+#### prd.json Conflicts (Easy)
 
 Both ralphs are updating different tasks. Resolution:
 
@@ -146,14 +146,14 @@ Before blindly resolving, the ralph should:
 ```text
 your-project/
 ├── unpossible.config.json         # Configuration
-├── tasks.json                     # Task list
+├── prd.json                       # Task list
 ├── progress.txt                   # Append-only progress log
 ├── prompt.template.md             # Instructions for ralphs
 │
 ├── .unpossible-ralphs/            # Git worktrees
 │   ├── ralph-1/                   # Branch: ralph-1
 │   │   ├── src/
-│   │   ├── tasks.json             # Ralph's copy (diverges as work happens)
+│   │   ├── prd.json               # Ralph's copy (diverges as work happens)
 │   │   └── node_modules → ../..   # Symlink to main repo
 │   ├── ralph-2/                   # Branch: ralph-2
 │   └── ralph-3/                   # Branch: ralph-3

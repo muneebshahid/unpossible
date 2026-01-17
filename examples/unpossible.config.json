@@ -1,5 +1,5 @@
 {
-  "tasksFile": "tasks.json",
+  "tasksFile": "prd.json",
   "tasksQuery": ".[]",
   "taskIdField": "id",
   "taskCompleteField": "done",

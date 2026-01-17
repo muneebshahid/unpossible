@@ -22,7 +22,7 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 1. Read and understand the task requirements
 2. Implement the changes needed
 3. Verify your implementation (see Validation section below)
-4. Update the tasks file: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
+4. Update `prd.json`: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
 5. Append a short entry to `progress.txt` describing what you did (include verification notes and any follow-ups)
 6. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
 
@@ -65,7 +65,7 @@ git rebase {{BASE_BRANCH}}
 
 ### If Rebase Has Conflicts
 
-**For tasks.json conflicts:**
+**For prd.json conflicts:**
 
 - Both versions are likely updating different tasks
 - Accept both changes: keep all updates from both sides
