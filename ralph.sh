@@ -11,12 +11,8 @@ BASE_BRANCH=${BASE_BRANCH:-"main"}
 LOCKS_DIR=${LOCKS_DIR:-"$MAIN_WORKTREE/.unpossible-locks"}
 LOG_DIR=${LOG_DIR:-"/tmp/claude/unpossible-logs"}
 
-PRD_FILE="${PRD_FILE:-prd.json}"
-TASKS_QUERY="${TASKS_QUERY:-.[]}"
-TASK_ID_FIELD="${TASK_ID_FIELD:-id}"
-TASK_COMPLETE_FIELD="${TASK_COMPLETE_FIELD:-done}"
-TASK_COMPLETE_VALUE="${TASK_COMPLETE_VALUE:-true}"
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
+PRD_FILE="prd.json"
 
 log() {
   echo "[$RALPH_ID] $1"
@@ -53,7 +49,7 @@ find_pending_task() {
 
   # Get all pending task IDs
   local pending_ids
-  pending_ids=$(jq -r "${TASKS_QUERY} | select(.${TASK_COMPLETE_FIELD} != ${TASK_COMPLETE_VALUE}) | .${TASK_ID_FIELD}" "$tasks_file" 2>/dev/null || echo "")
+  pending_ids=$(jq -r '.[] | select(.done != true) | .id' "$tasks_file" 2>/dev/null || echo "")
 
   for task_id in $pending_ids; do
     if claim_task "$task_id"; then
@@ -69,7 +65,7 @@ find_pending_task() {
 get_task_json() {
   local task_id=$1
   local tasks_file="$RALPH_DIR/$PRD_FILE"
-  jq "${TASKS_QUERY} | select(.${TASK_ID_FIELD} == \"$task_id\")" "$tasks_file" 2>/dev/null || echo "{}"
+  jq ".[] | select(.id == \"$task_id\")" "$tasks_file" 2>/dev/null || echo "{}"
 }
 
 # Build prompt from template

@@ -3,14 +3,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-PRD_FILE="${PRD_FILE:-prd.json}"
-TASKS_QUERY="${TASKS_QUERY:-.[]}"
-TASK_ID_FIELD="${TASK_ID_FIELD:-id}"
-TASK_COMPLETE_FIELD="${TASK_COMPLETE_FIELD:-done}"
-TASK_COMPLETE_VALUE="${TASK_COMPLETE_VALUE:-true}"
-PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
-RALPHS_DIR_NAME="${RALPHS_DIR_NAME:-.unpossible-ralphs}"
-LOCKS_DIR_NAME="${LOCKS_DIR_NAME:-.unpossible-locks}"
+PRD_FILE="prd.json"
+PROMPT_TEMPLATE="prompt.template.md"
+RALPHS_DIR_NAME=".unpossible-ralphs"
+LOCKS_DIR_NAME=".unpossible-locks"
 
 # Cleanup function
 do_cleanup() {
@@ -112,7 +108,7 @@ mkdir -p "$LOCKS_DIR"
 mkdir -p "$LOG_DIR"
 
 # Show pending count
-PENDING_COUNT=$(jq "[${TASKS_QUERY} | select(.${TASK_COMPLETE_FIELD} != ${TASK_COMPLETE_VALUE})] | length" "$PRD_FILE" 2>/dev/null || echo "?")
+PENDING_COUNT=$(jq '[.[] | select(.done != true)] | length' "$PRD_FILE" 2>/dev/null || echo "?")
 echo "Pending tasks: $PENDING_COUNT"
 echo ""
 
@@ -189,11 +185,6 @@ for ((i=1; i<=NUM_RALPHS; i++)); do
   MAIN_WORKTREE="$MAIN_WORKTREE" \
   RALPH_DIR="$RALPH_DIR" \
   BASE_BRANCH="$BASE_BRANCH" \
-  PRD_FILE="$PRD_FILE" \
-  TASKS_QUERY="$TASKS_QUERY" \
-  TASK_ID_FIELD="$TASK_ID_FIELD" \
-  TASK_COMPLETE_FIELD="$TASK_COMPLETE_FIELD" \
-  TASK_COMPLETE_VALUE="$TASK_COMPLETE_VALUE" \
   PROMPT_TEMPLATE="$PROMPT_TEMPLATE" \
   LOCKS_DIR="$LOCKS_DIR" \
   LOG_DIR="$LOG_DIR" \
