@@ -63,6 +63,15 @@ git rebase {{BASE_BRANCH}}
 (cd {{MAIN_DIR}} && git merge {{RALPH_BRANCH}} --ff-only)
 ```
 
+### If `--ff-only` Merge Fails
+
+If the fast-forward merge fails (base branch moved while you were working), rebase onto the latest base branch again and retry the merge:
+
+```bash
+git rebase {{BASE_BRANCH}}
+(cd {{MAIN_DIR}} && git merge {{RALPH_BRANCH}} --ff-only)
+```
+
 ### If Rebase Has Conflicts
 
 **For prd.json conflicts:**
