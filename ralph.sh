@@ -8,24 +8,15 @@ MAX_ITERATIONS=${2:-10}
 MAIN_WORKTREE=${MAIN_WORKTREE:-"$(pwd)"}
 RALPH_DIR=${RALPH_DIR:-"$(pwd)"}
 BASE_BRANCH=${BASE_BRANCH:-"main"}
-CONFIG_FILE=${CONFIG_FILE:-"unpossible.config.json"}
 LOCKS_DIR=${LOCKS_DIR:-"$MAIN_WORKTREE/.unpossible-locks"}
 LOG_DIR=${LOG_DIR:-"/tmp/claude/unpossible-logs"}
 
-# Load configuration
-load_config() {
-  if [ ! -f "$CONFIG_FILE" ]; then
-    log "Error: Config file not found: $CONFIG_FILE"
-    exit 1
-  fi
-
-  TASKS_FILE=$(jq -r '.tasksFile // "prd.json"' "$CONFIG_FILE")
-  TASKS_QUERY=$(jq -r '.tasksQuery // ".[]"' "$CONFIG_FILE")
-  TASK_ID_FIELD=$(jq -r '.taskIdField // "id"' "$CONFIG_FILE")
-  TASK_COMPLETE_FIELD=$(jq -r '.taskCompleteField // "done"' "$CONFIG_FILE")
-  TASK_COMPLETE_VALUE=$(jq -r '.taskCompleteValue // true' "$CONFIG_FILE")
-  PROMPT_TEMPLATE=$(jq -r '.promptTemplate // "prompt.template.md"' "$CONFIG_FILE")
-}
+PRD_FILE="${PRD_FILE:-prd.json}"
+TASKS_QUERY="${TASKS_QUERY:-.[]}"
+TASK_ID_FIELD="${TASK_ID_FIELD:-id}"
+TASK_COMPLETE_FIELD="${TASK_COMPLETE_FIELD:-done}"
+TASK_COMPLETE_VALUE="${TASK_COMPLETE_VALUE:-true}"
+PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
 
 log() {
   echo "[$RALPH_ID] $1"
@@ -53,7 +44,7 @@ release_task() {
 
 # Find next available pending task from tasks file (in ralph's worktree)
 find_pending_task() {
-  local tasks_file="$RALPH_DIR/$TASKS_FILE"
+  local tasks_file="$RALPH_DIR/$PRD_FILE"
 
   if [ ! -f "$tasks_file" ]; then
     echo ""
@@ -77,7 +68,7 @@ find_pending_task() {
 # Get full task JSON by ID
 get_task_json() {
   local task_id=$1
-  local tasks_file="$RALPH_DIR/$TASKS_FILE"
+  local tasks_file="$RALPH_DIR/$PRD_FILE"
   jq "${TASKS_QUERY} | select(.${TASK_ID_FIELD} == \"$task_id\")" "$tasks_file" 2>/dev/null || echo "{}"
 }
 
@@ -126,9 +117,6 @@ build_prompt() {
   cat "$temp_file"
   rm -f "$temp_file" "${temp_file}.bak" 2>/dev/null || true
 }
-
-# Load configuration
-load_config
 
 log "Starting in worktree: $RALPH_DIR"
 log "Base branch: $BASE_BRANCH, max iterations: $MAX_ITERATIONS"

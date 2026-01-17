@@ -11,22 +11,19 @@ Run multiple Claude agents (ralphs) in parallel to work through a task list.
 ## Quick Start
 
 ```bash
-# 1. Create your config file
-cp examples/unpossible.config.json unpossible.config.json
-
-# 2. Create your PRD file
+# 1. Create your PRD file
 cp examples/prd.json prd.json
 
-# 3. Create a progress log (required)
+# 2. Create a progress log
 cp examples/progress.txt progress.txt
 
-# 4. Create your prompt template
+# 3. Create your prompt template
 cp examples/prompt.template.md prompt.template.md
 
-# 5. Run 3 ralphs in parallel
+# 4. Run 3 ralphs in parallel
 ./unpossible.sh 3
 
-# 6. Clean up when done
+# 5. Clean up when done
 ./unpossible.sh clean
 ```
 
@@ -36,9 +33,8 @@ Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git 
 
 **Success depends on task quality**: Each task must be atomic (completable independently) and verifiable (clear validation criteria). Well-defined tasks enable effective parallelization.
 
-```
+```text
 your-project/
-├── unpossible.config.json     # Configuration
 ├── prd.json                   # Your task list
 ├── progress.txt               # Append-only log of completed work (required)
 ├── prompt.template.md         # Instructions for each ralph
@@ -53,35 +49,13 @@ your-project/
     └── TASK-002/
 ```
 
-## Configuration
+## Conventions
 
-Create `unpossible.config.json`:
+Unpossible uses a fixed file layout:
 
-```json
-{
-  "tasksFile": "prd.json",
-  "tasksQuery": ".[]",
-  "taskIdField": "id",
-  "taskCompleteField": "done",
-  "taskCompleteValue": true,
-  "promptTemplate": "prompt.template.md",
-  "baseBranch": "main",
-  "ralphsDir": ".unpossible-ralphs",
-  "locksDir": ".unpossible-locks"
-}
-```
-
-| Field | Description | Default |
-|-------|-------------|---------|
-| `tasksFile` | Path to JSON file with tasks | `prd.json` |
-| `tasksQuery` | jq query to extract task array | `.[]` |
-| `taskIdField` | Field containing task ID | `id` |
-| `taskCompleteField` | Field indicating completion | `done` |
-| `taskCompleteValue` | Value when task is complete | `true` |
-| `promptTemplate` | Path to prompt template file | `prompt.template.md` |
-| `baseBranch` | Branch to merge into | current branch |
-| `ralphsDir` | Directory for worktrees | `.unpossible-ralphs` |
-| `locksDir` | Directory for locks | `.unpossible-locks` |
+- `prd.json`: task list (JSON array)
+- `progress.txt`: append-only progress log
+- `prompt.template.md`: prompt template
 
 ## PRD File
 

@@ -7,10 +7,9 @@
 │                         unpossible.sh                           │
 │                        (Orchestrator)                           │
 │                                                                 │
-│  1. Loads config from unpossible.config.json                    │
-│  2. Creates git worktrees for each ralph                        │
-│  3. Spawns ralph.sh processes in parallel                       │
-│  4. Waits for completion                                        │
+│  1. Creates git worktrees for each ralph                        │
+│  2. Spawns ralph.sh processes in parallel                       │
+│  3. Waits for completion                                        │
 └─────────────────────────────────────────────────────────────────┘
          │              │              │
          ▼              ▼              ▼
@@ -145,7 +144,6 @@ Before blindly resolving, the ralph should:
 
 ```text
 your-project/
-├── unpossible.config.json         # Configuration
 ├── prd.json                       # Task list
 ├── progress.txt                   # Append-only progress log
 ├── prompt.template.md             # Instructions for ralphs

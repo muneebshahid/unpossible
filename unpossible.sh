@@ -2,26 +2,15 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="${CONFIG_FILE:-unpossible.config.json}"
 
-# Load configuration with defaults
-load_config() {
-  if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Error: Config file not found: $CONFIG_FILE"
-    echo "Create one or specify with CONFIG_FILE=path/to/config.json"
-    exit 1
-  fi
-
-  TASKS_FILE=$(jq -r '.tasksFile // "prd.json"' "$CONFIG_FILE")
-  TASKS_QUERY=$(jq -r '.tasksQuery // ".[]"' "$CONFIG_FILE")
-  TASK_ID_FIELD=$(jq -r '.taskIdField // "id"' "$CONFIG_FILE")
-  TASK_COMPLETE_FIELD=$(jq -r '.taskCompleteField // "done"' "$CONFIG_FILE")
-  TASK_COMPLETE_VALUE=$(jq -r '.taskCompleteValue // true' "$CONFIG_FILE")
-  PROMPT_TEMPLATE=$(jq -r '.promptTemplate // "prompt.template.md"' "$CONFIG_FILE")
-  BASE_BRANCH_CONFIG=$(jq -r '.baseBranch // ""' "$CONFIG_FILE")
-  RALPHS_DIR_NAME=$(jq -r '.ralphsDir // ".unpossible-ralphs"' "$CONFIG_FILE")
-  LOCKS_DIR_NAME=$(jq -r '.locksDir // ".unpossible-locks"' "$CONFIG_FILE")
-}
+PRD_FILE="${PRD_FILE:-prd.json}"
+TASKS_QUERY="${TASKS_QUERY:-.[]}"
+TASK_ID_FIELD="${TASK_ID_FIELD:-id}"
+TASK_COMPLETE_FIELD="${TASK_COMPLETE_FIELD:-done}"
+TASK_COMPLETE_VALUE="${TASK_COMPLETE_VALUE:-true}"
+PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
+RALPHS_DIR_NAME="${RALPHS_DIR_NAME:-.unpossible-ralphs}"
+LOCKS_DIR_NAME="${LOCKS_DIR_NAME:-.unpossible-locks}"
 
 # Cleanup function
 do_cleanup() {
@@ -48,14 +37,10 @@ show_usage() {
   echo ""
   echo "  num_ralphs: Number of parallel ralphs to spawn"
   echo "  iterations_per_ralph: Max iterations per ralph (default: 10)"
-  echo ""
-  echo "Environment variables:"
-  echo "  CONFIG_FILE: Path to config file (default: unpossible.config.json)"
 }
 
 # Handle cleanup flag
 if [ "$1" = "clean" ] || [ "$1" = "--clean" ] || [ "$1" = "-c" ]; then
-  load_config
   MAIN_WORKTREE="$(pwd)"
   RALPHS_DIR="$MAIN_WORKTREE/$RALPHS_DIR_NAME"
   LOCKS_DIR="$MAIN_WORKTREE/$LOCKS_DIR_NAME"
@@ -67,9 +52,6 @@ if [ -z "$1" ]; then
   show_usage
   exit 1
 fi
-
-# Load configuration
-load_config
 
 NUM_RALPHS=$1
 ITERATIONS=${2:-10}
@@ -85,23 +67,18 @@ echo "=========================================="
 echo ""
 
 # Determine base branch
-if [ -n "$BASE_BRANCH_CONFIG" ]; then
-  BASE_BRANCH="$BASE_BRANCH_CONFIG"
-else
-  BASE_BRANCH=$(git branch --show-current)
-fi
+BASE_BRANCH="${BASE_BRANCH:-$(git branch --show-current)}"
 
 if [ "$BASE_BRANCH" != "$(git branch --show-current)" ]; then
   echo "Note: Base branch is '$BASE_BRANCH', current branch is '$(git branch --show-current)'"
 fi
 
 echo "Base branch: $BASE_BRANCH"
-echo "Config file: $CONFIG_FILE"
-echo "Tasks file: $TASKS_FILE"
+echo "PRD file: $PRD_FILE"
 
 # Validate required files
-if [ ! -f "$TASKS_FILE" ]; then
-  echo "Error: Tasks file not found: $TASKS_FILE"
+if [ ! -f "$PRD_FILE" ]; then
+  echo "Error: PRD file not found: $PRD_FILE"
   exit 1
 fi
 
@@ -135,7 +112,7 @@ mkdir -p "$LOCKS_DIR"
 mkdir -p "$LOG_DIR"
 
 # Show pending count
-PENDING_COUNT=$(jq "[${TASKS_QUERY} | select(.${TASK_COMPLETE_FIELD} != ${TASK_COMPLETE_VALUE})] | length" "$TASKS_FILE" 2>/dev/null || echo "?")
+PENDING_COUNT=$(jq "[${TASKS_QUERY} | select(.${TASK_COMPLETE_FIELD} != ${TASK_COMPLETE_VALUE})] | length" "$PRD_FILE" 2>/dev/null || echo "?")
 echo "Pending tasks: $PENDING_COUNT"
 echo ""
 
@@ -212,7 +189,12 @@ for ((i=1; i<=NUM_RALPHS; i++)); do
   MAIN_WORKTREE="$MAIN_WORKTREE" \
   RALPH_DIR="$RALPH_DIR" \
   BASE_BRANCH="$BASE_BRANCH" \
-  CONFIG_FILE="$CONFIG_FILE" \
+  PRD_FILE="$PRD_FILE" \
+  TASKS_QUERY="$TASKS_QUERY" \
+  TASK_ID_FIELD="$TASK_ID_FIELD" \
+  TASK_COMPLETE_FIELD="$TASK_COMPLETE_FIELD" \
+  TASK_COMPLETE_VALUE="$TASK_COMPLETE_VALUE" \
+  PROMPT_TEMPLATE="$PROMPT_TEMPLATE" \
   LOCKS_DIR="$LOCKS_DIR" \
   LOG_DIR="$LOG_DIR" \
   "$SCRIPT_DIR/ralph.sh" "$RALPH_ID" "$ITERATIONS" &

@@ -2,9 +2,7 @@
 .unpossible-ralphs/
 .unpossible-locks/
 
-# User config files (examples are in examples/ directory)
-/unpossible.config.json
-/tasks.json
+# User files (examples are in examples/ directory)
 /prompt.template.md
 
 # Logs
