@@ -65,7 +65,7 @@ find_pending_task() {
 get_task_json() {
   local task_id=$1
   local tasks_file="$RALPH_DIR/$PRD_FILE"
-  jq ".[] | select(.id == \"$task_id\")" "$tasks_file" 2>/dev/null || echo "{}"
+  jq -c ".[] | select(.id == \"$task_id\")" "$tasks_file" 2>/dev/null || echo "{}"
 }
 
 # Build prompt from template
@@ -99,19 +99,10 @@ build_prompt() {
   prompt="${prompt//\{\{BASE_BRANCH\}\}/$BASE_BRANCH}"
   prompt="${prompt//\{\{VALIDATION_STEPS\}\}/$validation_steps}"
 
-  # For TASK_JSON, we need to escape it properly for bash
-  # Write to temp file and use sed for multi-line replacement
-  local temp_file="/tmp/claude/unpossible-prompt-$$"
-  echo "$prompt" > "$temp_file"
+  # TASK_JSON is a single-line JSON string (via `jq -c`), safe for direct replacement
+  prompt="${prompt//\{\{TASK_JSON\}\}/$task_json}"
 
-  # Escape task JSON for sed
-  local escaped_json
-  escaped_json=$(echo "$task_json" | sed 's/[&/\]/\\&/g' | tr '\n' ' ')
-  sed -i.bak "s/{{TASK_JSON}}/$escaped_json/g" "$temp_file" 2>/dev/null || \
-    sed "s/{{TASK_JSON}}/$escaped_json/g" "$temp_file" > "${temp_file}.new" && mv "${temp_file}.new" "$temp_file"
-
-  cat "$temp_file"
-  rm -f "$temp_file" "${temp_file}.bak" 2>/dev/null || true
+  echo "$prompt"
 }
 
 log "Starting in worktree: $RALPH_DIR"
