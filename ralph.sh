@@ -139,9 +139,11 @@ cd "$RALPH_DIR"
 for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   log "Iteration $iter: Looking for work..."
 
-  # Sync with base branch to get latest task file status
+  # Sync with base branch to get latest task file status.
+  # Note: `git fetch` updates remote-tracking refs; fast-forwarding updates the worktree.
   log "Syncing with $BASE_BRANCH..."
   git fetch origin "$BASE_BRANCH" 2>/dev/null || true
+  git merge --ff-only "$BASE_BRANCH" 2>/dev/null || true
 
   # Find and claim a pending task
   TASK_ID=$(find_pending_task)

@@ -112,7 +112,7 @@ Before blindly resolving, the ralph should:
 1. **Find the conflicting commit**:
 
    ```bash
-   git log --oneline origin/$BASE_BRANCH ^HEAD~1 -- <conflicted-file>
+   git log --oneline $BASE_BRANCH ^HEAD~1 -- <conflicted-file>
    ```
 
 2. **Identify which task the other ralph was implementing**

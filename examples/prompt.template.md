@@ -36,9 +36,8 @@ Before marking the task as done, verify your implementation:
 After your commit, rebase onto the latest base branch and merge back:
 
 ```bash
-# 1. Rebase onto latest base
-git fetch origin {{BASE_BRANCH}}
-git rebase origin/{{BASE_BRANCH}}
+# 1. Rebase onto latest base (local branch ref shared by all worktrees)
+git rebase {{BASE_BRANCH}}
 
 # 2. After successful rebase, merge into base branch (from main worktree)
 (cd {{MAIN_DIR}} && git merge {{RALPH_BRANCH}} --ff-only)
