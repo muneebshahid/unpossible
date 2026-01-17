@@ -30,11 +30,12 @@ do_cleanup() {
 
 # Show usage
 show_usage() {
-  echo "Usage: $0 <num_ralphs> [iterations_per_ralph]"
+  echo "Usage: $0 <num_ralphs> [iterations_per_ralph] [model]"
   echo "       $0 clean    # Clean up worktrees and locks"
   echo ""
   echo "  num_ralphs: Number of parallel ralphs to spawn"
   echo "  iterations_per_ralph: Max iterations per ralph (default: 10)"
+  echo "  model: Claude model name (optional, e.g. opus/sonnet/haiku)"
 }
 
 # Handle cleanup flag
@@ -55,6 +56,7 @@ fi
 
 NUM_RALPHS=$1
 ITERATIONS=${2:-10}
+CLAUDE_MODEL="${3:-${CLAUDE_MODEL:-}}"
 MAIN_WORKTREE="$(pwd)"
 RALPHS_DIR="$MAIN_WORKTREE/$RALPHS_DIR_NAME"
 LOCKS_DIR="$MAIN_WORKTREE/$LOCKS_DIR_NAME"
@@ -75,6 +77,9 @@ fi
 
 echo "Base branch: $BASE_BRANCH"
 echo "PRD file: $PRD_FILE"
+if [ -n "$CLAUDE_MODEL" ]; then
+  echo "Claude model: $CLAUDE_MODEL"
+fi
 
 # Initialize run logs directory
 RUN_STARTED_AT="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -84,24 +89,37 @@ RUN_ID="$RUN_STARTED_AT-$SAFE_BRANCH-$BASE_SHA"
 RUN_LOG_DIR="$LOGS_DIR/$RUN_ID"
 
 mkdir -p "$RUN_LOG_DIR"
-cat > "$RUN_LOG_DIR/session.json" <<EOF
-{
-  "runId": "$RUN_ID",
-  "startedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "endedAt": null,
-  "baseBranch": "$BASE_BRANCH",
-  "baseSha": "$BASE_SHA",
-  "numRalphs": $NUM_RALPHS,
-  "iterationsPerRalph": $ITERATIONS,
-  "paths": {
-    "mainWorktree": "$MAIN_WORKTREE",
-    "unpossibleDir": "$MAIN_WORKTREE/$UNPOSSIBLE_DIR_NAME",
-    "ralphsDir": "$RALPHS_DIR",
-    "locksDir": "$LOCKS_DIR",
-    "logsDir": "$RUN_LOG_DIR"
-  }
-}
-EOF
+STARTED_AT_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+jq -n \
+  --arg runId "$RUN_ID" \
+  --arg startedAt "$STARTED_AT_ISO" \
+  --arg baseBranch "$BASE_BRANCH" \
+  --arg baseSha "$BASE_SHA" \
+  --arg claudeModel "$CLAUDE_MODEL" \
+  --arg mainWorktree "$MAIN_WORKTREE" \
+  --arg unpossibleDir "$MAIN_WORKTREE/$UNPOSSIBLE_DIR_NAME" \
+  --arg ralphsDir "$RALPHS_DIR" \
+  --arg locksDir "$LOCKS_DIR" \
+  --arg logsDir "$RUN_LOG_DIR" \
+  --argjson numRalphs "$NUM_RALPHS" \
+  --argjson iterationsPerRalph "$ITERATIONS" \
+  '{
+    runId: $runId,
+    startedAt: $startedAt,
+    endedAt: null,
+    baseBranch: $baseBranch,
+    baseSha: $baseSha,
+    claudeModel: (if $claudeModel == "" then null else $claudeModel end),
+    numRalphs: $numRalphs,
+    iterationsPerRalph: $iterationsPerRalph,
+    paths: {
+      mainWorktree: $mainWorktree,
+      unpossibleDir: $unpossibleDir,
+      ralphsDir: $ralphsDir,
+      locksDir: $locksDir,
+      logsDir: $logsDir
+    }
+  }' > "$RUN_LOG_DIR/session.json"
 
 # Validate required files
 if [ ! -f "$PRD_FILE" ]; then
@@ -215,6 +233,7 @@ for ((i=1; i<=NUM_RALPHS; i++)); do
   MAIN_WORKTREE="$MAIN_WORKTREE" \
   RALPH_DIR="$RALPH_DIR" \
   BASE_BRANCH="$BASE_BRANCH" \
+  CLAUDE_MODEL="$CLAUDE_MODEL" \
   PROMPT_TEMPLATE="$PROMPT_TEMPLATE" \
   LOCKS_DIR="$LOCKS_DIR" \
   RUN_LOG_DIR="$RUN_LOG_DIR" \

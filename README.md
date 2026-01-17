@@ -112,6 +112,9 @@ See `examples/prompt.template.md` for a complete example.
 # Run N ralphs with custom iteration limit
 ./unpossible.sh <N> <iterations>
 
+# Run N ralphs with a specific Claude model
+./unpossible.sh <N> <iterations> <model>
+
 # Stop all ralphs
 Ctrl+C
 

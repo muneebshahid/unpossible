@@ -13,6 +13,7 @@ RUN_LOG_DIR=${RUN_LOG_DIR:-"$MAIN_WORKTREE/.unpossible/logs/manual"}
 
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
 PRD_FILE="prd.json"
+CLAUDE_MODEL="${CLAUDE_MODEL:-}"
 
 log() {
   echo "[$RALPH_ID] $1"
@@ -149,10 +150,13 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   log "Running Claude on $TASK_ID..."
 
   # Run Claude in the ralph directory
+  claude_args=(--output-format stream-json --verbose --dangerously-skip-permissions)
+  if [ -n "$CLAUDE_MODEL" ]; then
+    claude_args+=(--model "$CLAUDE_MODEL")
+  fi
+
   set +e
-  claude --output-format stream-json --verbose \
-    --dangerously-skip-permissions \
-    -p "$PROMPT" 2>&1 | \
+  claude "${claude_args[@]}" -p "$PROMPT" 2>&1 | \
     tee "$TASK_STREAM_JSONL" | \
     tee -a "$TASK_LOG" | \
     jq --unbuffered -r --arg ralph "$RALPH_ID" '
