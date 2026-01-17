@@ -1,0 +1,11 @@
+# Progress Log
+
+This file is an append-only log of work completed by ralphs during an Unpossible run.
+
+Guidance:
+- Add a new section per task (e.g. `## TASK-001: <title>`)
+- Include a brief verification note (what you ran / checked)
+- Include a short summary of changes and any follow-ups for the next person
+
+---
+

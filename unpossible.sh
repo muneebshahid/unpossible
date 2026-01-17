@@ -110,6 +110,22 @@ if [ ! -f "$PROMPT_TEMPLATE" ]; then
   exit 1
 fi
 
+# Initialize progress file if it doesn't exist (required for multi-ralph runs)
+if [ ! -f "progress.txt" ]; then
+  echo "# Progress Log" > progress.txt
+  echo "" >> progress.txt
+  echo "This file is an append-only log of completed work across ralphs." >> progress.txt
+  echo "" >> progress.txt
+  echo "---" >> progress.txt
+  echo "" >> progress.txt
+  echo "Note: Created progress.txt. For best results, commit it before running many ralphs to avoid add/add merge conflicts." 1>&2
+fi
+
+# Warn if progress.txt exists but isn't tracked (common source of add/add conflicts)
+if ! git ls-files --error-unmatch progress.txt >/dev/null 2>&1; then
+  echo "Note: progress.txt is not tracked by git. Consider committing it before running many ralphs to avoid add/add merge conflicts." 1>&2
+fi
+
 # Clean up locks from previous runs
 if [ -d "$LOCKS_DIR" ]; then
   echo "Cleaning up stale locks..."

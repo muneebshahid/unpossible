@@ -23,7 +23,27 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 2. Implement the changes needed
 3. Verify your implementation (see Validation section below)
 4. Update the tasks file: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
-5. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
+5. Append a short entry to `progress.txt` describing what you did (include verification notes and any follow-ups)
+6. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
+
+### `progress.txt` Entry Format (Example)
+
+Append something like this (adapt as needed, keep it concise and append-only):
+
+```md
+---
+
+## {{TASK_ID}}: <task title>
+
+**Ralph**: {{RALPH_BRANCH}}
+**When**: <YYYY-MM-DDTHH:MM:SSZ>
+**Verification**: <what you ran / checked>
+**Changes**:
+- <bullet>
+- <bullet>
+**Follow-ups** (optional):
+- <bullet>
+```
 
 ## Validation
 
@@ -51,6 +71,11 @@ git rebase {{BASE_BRANCH}}
 - Accept both changes: keep all updates from both sides
 - Make sure `"done"` and `"notes"` fields reflect the latest state for each task
 
+**For progress.txt conflicts:**
+
+- Append-only file: keep ALL entries from both sides
+- Order doesn’t matter; ensure nothing is lost
+
 **For source code conflicts:**
 
 1. Identify what the other commit was implementing
@@ -69,7 +94,8 @@ git rebase --continue
 
 1. Abort: `git rebase --abort`
 2. Your commit is still safe on your branch
-3. Continue to next iteration (another ralph or human can help later)
+3. Log the issue in `progress.txt`
+4. Continue to next iteration (another ralph or human can help later)
 
 ## Important Notes
 

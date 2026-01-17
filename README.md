@@ -17,13 +17,16 @@ cp examples/unpossible.config.json unpossible.config.json
 # 2. Create your tasks file
 cp examples/tasks.json tasks.json
 
-# 3. Create your prompt template
+# 3. Create a progress log (required)
+cp examples/progress.txt progress.txt
+
+# 4. Create your prompt template
 cp examples/prompt.template.md prompt.template.md
 
-# 4. Run 3 ralphs in parallel
+# 5. Run 3 ralphs in parallel
 ./unpossible.sh 3
 
-# 5. Clean up when done
+# 6. Clean up when done
 ./unpossible.sh clean
 ```
 
@@ -37,6 +40,7 @@ Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git 
 your-project/
 ├── unpossible.config.json     # Configuration
 ├── tasks.json                 # Your task list
+├── progress.txt               # Append-only log of completed work
 ├── prompt.template.md         # Instructions for each ralph
 │
 ├── .unpossible-ralphs/        # Git worktrees (one per ralph)

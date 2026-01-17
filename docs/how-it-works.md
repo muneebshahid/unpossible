@@ -94,6 +94,7 @@ The rebase puts the ralph's commit on top of latest base, then `--ff-only` advan
 Multiple ralphs modify files simultaneously:
 
 - **tasks.json**: Every ralph updates task status
+- **progress.txt**: Every ralph appends progress notes
 - **Source files**: Occasionally, if tasks touch related code
 
 ### Resolution Strategy
@@ -104,6 +105,13 @@ Both ralphs are updating different tasks. Resolution:
 
 - Keep ALL task updates from both sides
 - Both ralphs marking different tasks as complete? Keep both.
+
+#### progress.txt Conflicts (Easy)
+
+`progress.txt` should be treated as append-only. Resolution:
+
+- Keep ALL entries from both sides
+- Order doesn't matter; ensure nothing is lost
 
 #### Source Code Conflicts (Requires Context)
 
@@ -139,6 +147,7 @@ Before blindly resolving, the ralph should:
 your-project/
 ├── unpossible.config.json         # Configuration
 ├── tasks.json                     # Task list
+├── progress.txt                   # Append-only progress log
 ├── prompt.template.md             # Instructions for ralphs
 │
 ├── .unpossible-ralphs/            # Git worktrees
