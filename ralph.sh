@@ -8,8 +8,8 @@ MAX_ITERATIONS=${2:-10}
 MAIN_WORKTREE=${MAIN_WORKTREE:-"$(pwd)"}
 RALPH_DIR=${RALPH_DIR:-"$(pwd)"}
 BASE_BRANCH=${BASE_BRANCH:-"main"}
-LOCKS_DIR=${LOCKS_DIR:-"$MAIN_WORKTREE/.unpossible-locks"}
-LOG_DIR=${LOG_DIR:-"/tmp/claude/unpossible-logs"}
+LOCKS_DIR=${LOCKS_DIR:-"$MAIN_WORKTREE/.unpossible/locks"}
+RUN_LOG_DIR=${RUN_LOG_DIR:-"$MAIN_WORKTREE/.unpossible/logs/manual"}
 
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
 PRD_FILE="prd.json"
@@ -140,10 +140,13 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   log "Claimed task: $TASK_ID"
 
   # Set up logging for this task
-  TASK_LOG_DIR="$LOCKS_DIR/$TASK_ID"
+  TASK_LOG_DIR="$RUN_LOG_DIR/$TASK_ID"
   TASK_LOG="$TASK_LOG_DIR/output.log"
-  TASK_JSON_LOG="$LOG_DIR/$RALPH_ID-$TASK_ID.json"
-  mkdir -p "$LOG_DIR"
+  TASK_STREAM_JSONL="$TASK_LOG_DIR/stream.jsonl"
+  mkdir -p "$TASK_LOG_DIR"
+
+  # Persist claim metadata in logs
+  cp "$LOCKS_DIR/$TASK_ID/ralph.json" "$TASK_LOG_DIR/ralph.json" 2>/dev/null || true
 
   # Get current branch name
   RALPH_BRANCH=$(git branch --show-current)
@@ -161,7 +164,7 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   claude --output-format stream-json --verbose \
     --dangerously-skip-permissions \
     -p "$PROMPT" 2>&1 | \
-    tee "$TASK_JSON_LOG" | \
+    tee "$TASK_STREAM_JSONL" | \
     tee -a "$TASK_LOG" | \
     jq --unbuffered -r --arg ralph "$RALPH_ID" '
       if .type == "assistant" then
@@ -185,14 +188,15 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
 
   # Release the task lock
   release_task "$TASK_ID"
+  cp "$LOCKS_DIR/$TASK_ID/completed.json" "$TASK_LOG_DIR/completed.json" 2>/dev/null || true
 
   # Check for completion signals in output
-  if grep -q '"COMPLETE"' "$TASK_JSON_LOG" 2>/dev/null; then
+  if grep -q '"COMPLETE"' "$TASK_STREAM_JSONL" 2>/dev/null; then
     log "All tasks complete!"
     break
   fi
 
-  if grep -q '"SKIP"' "$TASK_JSON_LOG" 2>/dev/null; then
+  if grep -q '"SKIP"' "$TASK_STREAM_JSONL" 2>/dev/null; then
     log "Skipped $TASK_ID"
   fi
 

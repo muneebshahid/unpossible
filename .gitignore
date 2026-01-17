@@ -1,6 +1,5 @@
 # Unpossible runtime directories
-.unpossible-ralphs/
-.unpossible-locks/
+.unpossible/
 
 # User files (examples are in examples/ directory)
 /prompt.template.md

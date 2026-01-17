@@ -39,14 +39,13 @@ your-project/
 ├── progress.txt               # Append-only log of completed work (required)
 ├── prompt.template.md         # Instructions for each ralph
 │
-├── .unpossible-ralphs/        # Git worktrees (one per ralph)
-│   ├── ralph-1/
-│   ├── ralph-2/
-│   └── ralph-3/
-│
-└── .unpossible-locks/         # Task locks (prevents duplicates)
-    ├── TASK-001/
-    └── TASK-002/
+└── .unpossible/               # Runtime directory
+    ├── ralphs/                # Git worktrees (one per ralph)
+    │   ├── ralph-1/
+    │   ├── ralph-2/
+    │   └── ralph-3/
+    ├── locks/                 # Task locks (cleared on restart)
+    └── logs/                  # Per-run logs (persist across restarts)
 ```
 
 ## Conventions

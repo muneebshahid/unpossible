@@ -5,8 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PRD_FILE="prd.json"
 PROMPT_TEMPLATE="prompt.template.md"
-RALPHS_DIR_NAME=".unpossible-ralphs"
-LOCKS_DIR_NAME=".unpossible-locks"
+UNPOSSIBLE_DIR_NAME=".unpossible"
+RALPHS_DIR_NAME="$UNPOSSIBLE_DIR_NAME/ralphs"
+LOCKS_DIR_NAME="$UNPOSSIBLE_DIR_NAME/locks"
+LOGS_DIR_NAME="$UNPOSSIBLE_DIR_NAME/logs"
 
 # Cleanup function
 do_cleanup() {
@@ -40,7 +42,9 @@ if [ "$1" = "clean" ] || [ "$1" = "--clean" ] || [ "$1" = "-c" ]; then
   MAIN_WORKTREE="$(pwd)"
   RALPHS_DIR="$MAIN_WORKTREE/$RALPHS_DIR_NAME"
   LOCKS_DIR="$MAIN_WORKTREE/$LOCKS_DIR_NAME"
+  UNPOSSIBLE_DIR="$MAIN_WORKTREE/$UNPOSSIBLE_DIR_NAME"
   do_cleanup
+  rm -rf "$UNPOSSIBLE_DIR" 2>/dev/null || true
   exit 0
 fi
 
@@ -54,7 +58,7 @@ ITERATIONS=${2:-10}
 MAIN_WORKTREE="$(pwd)"
 RALPHS_DIR="$MAIN_WORKTREE/$RALPHS_DIR_NAME"
 LOCKS_DIR="$MAIN_WORKTREE/$LOCKS_DIR_NAME"
-LOG_DIR="/tmp/claude/unpossible-logs"
+LOGS_DIR="$MAIN_WORKTREE/$LOGS_DIR_NAME"
 
 echo ""
 echo "=========================================="
@@ -71,6 +75,33 @@ fi
 
 echo "Base branch: $BASE_BRANCH"
 echo "PRD file: $PRD_FILE"
+
+# Initialize run logs directory
+RUN_STARTED_AT="$(date -u +%Y%m%dT%H%M%SZ)"
+BASE_SHA="$(git rev-parse --short "$BASE_BRANCH" 2>/dev/null || git rev-parse --short HEAD)"
+SAFE_BRANCH="$(echo "$BASE_BRANCH" | tr '/\\ ' '---' | tr -cd '[:alnum:]._-' )"
+RUN_ID="$RUN_STARTED_AT-$SAFE_BRANCH-$BASE_SHA"
+RUN_LOG_DIR="$LOGS_DIR/$RUN_ID"
+
+mkdir -p "$RUN_LOG_DIR"
+cat > "$RUN_LOG_DIR/session.json" <<EOF
+{
+  "runId": "$RUN_ID",
+  "startedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "endedAt": null,
+  "baseBranch": "$BASE_BRANCH",
+  "baseSha": "$BASE_SHA",
+  "numRalphs": $NUM_RALPHS,
+  "iterationsPerRalph": $ITERATIONS,
+  "paths": {
+    "mainWorktree": "$MAIN_WORKTREE",
+    "unpossibleDir": "$MAIN_WORKTREE/$UNPOSSIBLE_DIR_NAME",
+    "ralphsDir": "$RALPHS_DIR",
+    "locksDir": "$LOCKS_DIR",
+    "logsDir": "$RUN_LOG_DIR"
+  }
+}
+EOF
 
 # Validate required files
 if [ ! -f "$PRD_FILE" ]; then
@@ -105,7 +136,6 @@ if [ -d "$LOCKS_DIR" ]; then
   rm -rf "$LOCKS_DIR"
 fi
 mkdir -p "$LOCKS_DIR"
-mkdir -p "$LOG_DIR"
 
 # Show pending count
 PENDING_COUNT=$(jq '[.[] | select(.done != true)] | length' "$PRD_FILE" 2>/dev/null || echo "?")
@@ -187,7 +217,7 @@ for ((i=1; i<=NUM_RALPHS; i++)); do
   BASE_BRANCH="$BASE_BRANCH" \
   PROMPT_TEMPLATE="$PROMPT_TEMPLATE" \
   LOCKS_DIR="$LOCKS_DIR" \
-  LOG_DIR="$LOG_DIR" \
+  RUN_LOG_DIR="$RUN_LOG_DIR" \
   "$SCRIPT_DIR/ralph.sh" "$RALPH_ID" "$ITERATIONS" &
 
   RALPH_PIDS+=($!)
@@ -215,6 +245,10 @@ echo "  Session Complete"
 echo "  Ralphs completed: $COMPLETED"
 echo "  Ralphs failed: $FAILED"
 echo "=========================================="
+
+# Mark session ended
+jq --arg endedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '.endedAt=$endedAt' "$RUN_LOG_DIR/session.json" > "$RUN_LOG_DIR/session.json.tmp" && \
+  mv "$RUN_LOG_DIR/session.json.tmp" "$RUN_LOG_DIR/session.json"
 
 # Show branch status
 echo ""

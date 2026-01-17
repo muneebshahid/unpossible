@@ -25,11 +25,10 @@
          └──────────────┼──────────────┘
                         ▼
               ┌─────────────────┐
-              │ .unpossible-    │
-              │   locks/        │
+              │ .unpossible/    │
               │                 │
-              │ TASK-001/       │
-              │ TASK-002/       │
+              │ locks/          │
+              │ logs/           │
               └─────────────────┘
 ```
 
@@ -39,7 +38,7 @@ Ralphs use **atomic directory creation** to claim tasks:
 
 ```bash
 # Ralph tries to claim TASK-001
-mkdir .unpossible-locks/TASK-001
+mkdir .unpossible/locks/TASK-001
 
 # If mkdir succeeds → Ralph claimed it (first one wins)
 # If mkdir fails    → Another ralph already claimed it, try next task
@@ -148,30 +147,33 @@ your-project/
 ├── progress.txt                   # Append-only progress log
 ├── prompt.template.md             # Instructions for ralphs
 │
-├── .unpossible-ralphs/            # Git worktrees
-│   ├── ralph-1/                   # Branch: ralph-1
-│   │   ├── src/
-│   │   ├── prd.json               # Ralph's copy (diverges as work happens)
-│   │   └── node_modules → ../..   # Symlink to main repo
-│   ├── ralph-2/                   # Branch: ralph-2
-│   └── ralph-3/                   # Branch: ralph-3
-│
-└── .unpossible-locks/             # Task locks (shared across all ralphs)
-    ├── TASK-001/
-    │   ├── ralph.json             # Who claimed it
-    │   ├── output.log             # Full Claude output
-    │   └── completed.json         # Completion timestamp
-    └── TASK-002/
-        └── ...
+└── .unpossible/                   # Runtime directory
+    ├── ralphs/                    # Git worktrees
+    │   ├── ralph-1/               # Branch: ralph-1
+    │   ├── ralph-2/               # Branch: ralph-2
+    │   └── ralph-3/               # Branch: ralph-3
+    ├── locks/                     # Task locks (cleared on restart)
+    │   ├── TASK-001/
+    │   └── TASK-002/
+    └── logs/                      # Per-run logs (persist)
+        └── <run-id>/
+            ├── session.json
+            ├── TASK-001/
+            │   ├── output.log
+            │   ├── stream.jsonl
+            │   ├── ralph.json
+            │   └── completed.json
+            └── TASK-002/
+                └── ...
 ```
 
 ## Logs
 
 | Location | Contents |
 |----------|----------|
-| `.unpossible-locks/TASK-XXX/output.log` | Full Claude output for that task |
-| `.unpossible-locks/TASK-XXX/ralph.json` | Who claimed it, when |
-| `/tmp/claude/unpossible-logs/` | Raw JSON stream output |
+| `.unpossible/logs/<run-id>/session.json` | Run metadata (branch, timestamps, etc.) |
+| `.unpossible/logs/<run-id>/TASK-XXX/output.log` | Human-readable output for that task |
+| `.unpossible/logs/<run-id>/TASK-XXX/stream.jsonl` | Raw stream-json output for that task |
 
 ## After Completion
 
@@ -211,7 +213,7 @@ git cherry-pick <commit-hash>
 # Or manually:
 git worktree list | grep ralph- | awk '{print $1}' | xargs -I {} git worktree remove {} --force
 git branch -D ralph-1 ralph-2 ralph-3
-rm -rf .unpossible-ralphs .unpossible-locks
+rm -rf .unpossible
 ```
 
 ## Limitations
