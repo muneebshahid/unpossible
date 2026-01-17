@@ -157,7 +157,17 @@ mkdir -p "$LOCKS_DIR"
 
 # Show pending count
 PENDING_COUNT=$(jq '[.[] | select(.done != true)] | length' "$PRD_FILE" 2>/dev/null || echo "?")
-echo "Pending tasks: $PENDING_COUNT"
+READY_COUNT=$(jq '
+  (. as $all
+   | reduce $all[] as $t ({}; .[$t.id]=$t) as $m
+   | [ $all[]
+       | select(.done != true)
+       | select(((.dependsOn // []) | all(. as $d | ($m[$d]? | .done) == true)))
+     ]
+   | length
+  )
+' "$PRD_FILE" 2>/dev/null || echo "?")
+echo "Pending tasks: $PENDING_COUNT (ready: $READY_COUNT)"
 echo ""
 
 # Set up worktrees

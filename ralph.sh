@@ -19,6 +19,70 @@ log() {
   echo "[$RALPH_ID] $1"
 }
 
+# List task IDs that are not done and have all dependencies satisfied.
+list_ready_task_ids() {
+  local tasks_file="$RALPH_DIR/$PRD_FILE"
+
+  jq -r '
+    (. as $all
+     | reduce $all[] as $t ({}; .[$t.id]=$t) as $m
+     | $all[]
+     | select(.done != true)
+     | select(((.dependsOn // []) | all(. as $d | ($m[$d]? | .done) == true)))
+     | .id
+    )
+  ' "$tasks_file" 2>/dev/null || true
+}
+
+# Print a human-readable list of blocked tasks (pending tasks with unmet dependencies).
+print_blocked_tasks() {
+  local tasks_file="$RALPH_DIR/$PRD_FILE"
+
+  jq -r '
+    (. as $all
+     | reduce $all[] as $t ({}; .[$t.id]=$t) as $m
+     | $all[]
+     | select(.done != true)
+     | (.dependsOn // []) as $deps
+     | ($deps | map(select(($m[.]? | .done) != true))) as $unmet
+     | select(($unmet | length) > 0)
+     | "\(.id) blocked by: \($unmet | join(\", \"))"
+    )
+  ' "$tasks_file" 2>/dev/null || true
+}
+
+# Detect tasks that are in a dependency cycle (best-effort). Only used for "no ready tasks" debugging.
+list_cycle_task_ids() {
+  local tasks_file="$RALPH_DIR/$PRD_FILE"
+
+  jq -r '
+    def deps($m; $id):
+      (($m[$id]? | .dependsOn // []) // []);
+
+    def closure($m; $start; $n):
+      reduce range(0; $n) as $i
+        ({frontier: deps($m; $start), seen: []};
+         .frontier as $f
+         | .seen = (.seen + $f | unique)
+         | .frontier = (
+             ($f | map(deps($m; .)) | add // [])
+             | unique
+             | map(select((.seen | index(.)) | not))
+           )
+        )
+      | .seen;
+
+    (. as $all
+     | reduce $all[] as $t ({}; .[$t.id]=$t) as $m
+     | ($all | length) as $n
+     | $all[]
+     | .id as $id
+     | select((closure($m; $id; $n) | index($id)) != null)
+     | $id
+    )
+  ' "$tasks_file" 2>/dev/null | sort -u || true
+}
+
 # Try to claim a task by creating its lock directory (atomic via mkdir)
 claim_task() {
   local task_id=$1
@@ -48,11 +112,35 @@ find_pending_task() {
     return
   fi
 
-  # Get all pending task IDs
-  local pending_ids
-  pending_ids=$(jq -r '.[] | select(.done != true) | .id' "$tasks_file" 2>/dev/null || echo "")
+  local ready_ids
+  ready_ids=$(list_ready_task_ids)
 
-  for task_id in $pending_ids; do
+  if [ -z "$ready_ids" ]; then
+    local pending_count
+    pending_count=$(jq -r '[.[] | select(.done != true)] | length' "$tasks_file" 2>/dev/null || echo "0")
+
+    if [ "$pending_count" != "0" ]; then
+      log "No ready tasks (pending: $pending_count). Likely blocked by dependencies."
+      log "Blocked tasks:"
+      print_blocked_tasks | while read -r line; do
+        [ -n "$line" ] && log "  $line"
+      done
+
+      local cycles
+      cycles=$(list_cycle_task_ids)
+      if [ -n "$cycles" ]; then
+        log "Dependency cycle detected involving:"
+        echo "$cycles" | while read -r id; do
+          [ -n "$id" ] && log "  $id"
+        done
+      fi
+    fi
+
+    echo ""
+    return
+  fi
+
+  for task_id in $ready_ids; do
     if claim_task "$task_id"; then
       echo "$task_id"
       return
@@ -179,19 +267,25 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   CLAUDE_EXIT=$?
   set -e
 
-  # Release the task lock
-  release_task "$TASK_ID"
-  cp "$LOCKS_DIR/$TASK_ID/completed.json" "$TASK_LOG_DIR/completed.json" 2>/dev/null || true
-
-  # Check for completion signals in output
+  # Check for completion/skip signals in output
   if grep -q '"COMPLETE"' "$TASK_STREAM_JSONL" 2>/dev/null; then
     log "All tasks complete!"
+    release_task "$TASK_ID"
+    cp "$LOCKS_DIR/$TASK_ID/completed.json" "$TASK_LOG_DIR/completed.json" 2>/dev/null || true
     break
   fi
 
   if grep -q '"SKIP"' "$TASK_STREAM_JSONL" 2>/dev/null; then
     log "Skipped $TASK_ID"
+    echo "{\"skippedAt\": \"$(date -Iseconds)\"}" > "$TASK_LOG_DIR/skipped.json"
+    rm -rf "$LOCKS_DIR/$TASK_ID" 2>/dev/null || true
+    log "Finished $TASK_ID, looking for next task..."
+    continue
   fi
+
+  # Task ran normally: mark lock completed
+  release_task "$TASK_ID"
+  cp "$LOCKS_DIR/$TASK_ID/completed.json" "$TASK_LOG_DIR/completed.json" 2>/dev/null || true
 
   log "Finished $TASK_ID, looking for next task..."
 done

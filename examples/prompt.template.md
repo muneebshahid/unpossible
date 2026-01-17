@@ -19,12 +19,21 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 
 ## Instructions
 
-1. Read and understand the task requirements
-2. Implement the changes needed
-3. Verify your implementation (see Validation section below)
-4. Update `prd.json`: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
-5. Append a short entry to `progress.txt` describing what you did (include verification notes and any follow-ups)
-6. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
+1. Read `progress.txt` to understand recent changes and any coordination notes
+2. Read and understand the task requirements in `prd.json`
+3. Implement the changes needed (stay tightly scoped to {{TASK_ID}})
+4. Verify your implementation (see Validation section below)
+5. Update `prd.json`: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
+6. Append a short entry to `progress.txt` describing what you did (include verification notes and any follow-ups)
+7. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
+
+### Dependencies (`dependsOn`)
+
+If you discover that {{TASK_ID}} depends on another task:
+
+1. Update {{TASK_ID}} in `prd.json` to add `dependsOn: ["TASK-XXX", ...]` and add a short note explaining why.
+2. Append a coordination note to `progress.txt` (include which task you were blocked on).
+3. Output `<promise>SKIP</promise>` (so the task can be retried later once dependencies are done).
 
 ### `progress.txt` Entry Format (Example)
 
