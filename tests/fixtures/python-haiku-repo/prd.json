@@ -1,0 +1,59 @@
+[
+  {
+    "id": "TASK-001",
+    "title": "Winter haiku module + tests",
+    "description": "Create `src/haiku_winter.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about winter). Create `tests/test_haiku_winter.py` that imports `tests.bootstrap`, imports `haiku_winter`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"winter\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_winter && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-002",
+    "title": "Spring haiku module + tests",
+    "description": "Create `src/haiku_spring.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about spring). Create `tests/test_haiku_spring.py` that imports `tests.bootstrap`, imports `haiku_spring`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"spring\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_spring && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-003",
+    "title": "Summer haiku module + tests",
+    "description": "Create `src/haiku_summer.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about summer). Create `tests/test_haiku_summer.py` that imports `tests.bootstrap`, imports `haiku_summer`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"summer\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_summer && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-004",
+    "title": "Autumn haiku module + tests",
+    "description": "Create `src/haiku_autumn.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about autumn). Create `tests/test_haiku_autumn.py` that imports `tests.bootstrap`, imports `haiku_autumn`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"autumn\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_autumn && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-005",
+    "title": "Moon haiku module + tests",
+    "description": "Create `src/haiku_moon.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about the moon). Create `tests/test_haiku_moon.py` that imports `tests.bootstrap`, imports `haiku_moon`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"moon\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_moon && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-006",
+    "title": "Rain haiku module + tests",
+    "description": "Create `src/haiku_rain.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about rain). Create `tests/test_haiku_rain.py` that imports `tests.bootstrap`, imports `haiku_rain`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"rain\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_rain && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  },
+  {
+    "id": "TASK-007",
+    "title": "Mountain haiku module + tests",
+    "description": "Create `src/haiku_mountain.py` exporting `get_haiku()` that returns a list of exactly 3 non-empty strings (a haiku about mountains). Create `tests/test_haiku_mountain.py` that imports `tests.bootstrap`, imports `haiku_mountain`, calls `get_haiku()`, and asserts: result is a list, length is 3, each line is a non-empty string, and at least one line contains the substring \"mountain\" (case-insensitive). Update `prd.json` (done=true, notes) and append an entry to `progress.txt`.",
+    "validation": "python -m unittest tests.test_haiku_mountain && python -m unittest discover -s tests",
+    "done": false,
+    "notes": ""
+  }
+]
+

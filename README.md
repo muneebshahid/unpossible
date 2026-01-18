@@ -27,6 +27,16 @@ cp examples/prompt.template.md prompt.template.md
 ./unpossible.sh clean
 ```
 
+## Sandbox Test Repo (for future testing)
+
+This repo includes a small, dependency-free Python fixture you can copy into `/tmp` to test Unpossible end-to-end.
+
+```bash
+./tests/create-sandbox-repo.sh /tmp/unp --force
+cd /tmp/unp
+./unpossible.sh 2 10 haiku
+```
+
 ## How It Works
 
 Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git worktree, working on different tasks simultaneously. Ralphs coordinate through file-based locks to avoid working on the same task.

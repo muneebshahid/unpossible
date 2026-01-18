@@ -27,6 +27,17 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 6. Append a short entry to `progress.txt` describing what you did (include verification notes and any follow-ups)
 7. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
 
+## Non-negotiables (required for the run to make progress)
+
+Before you consider {{TASK_ID}} “done”, you MUST:
+
+1. Run the Validation commands (below) and ensure they pass
+2. Update `prd.json` for {{TASK_ID}} (`"done": true` and a short `"notes"` entry)
+3. Append a new entry to `progress.txt` (append-only)
+4. Commit your changes
+
+If you do not update `prd.json`, the task will remain pending and can block progress for the whole run.
+
 ### Dependencies (`dependsOn`)
 
 If you discover that {{TASK_ID}} depends on another task:
