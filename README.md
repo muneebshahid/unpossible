@@ -37,6 +37,26 @@ cd /tmp/unp
 ./unpossible.sh 2 10 haiku
 ```
 
+To exercise dependency handling (`dependsOn` + `<promise>SKIP</promise>`), generate the dependency fixture:
+
+```bash
+./tests/create-sandbox-repo.sh /tmp/unp --force --fixture python-haiku-deps-repo
+```
+
+If tasks are pending but blocked by dependencies, ralphs will wait and retry instead of exiting. Control the wait interval with:
+
+```bash
+WAIT_SECONDS=60 ./unpossible.sh 2 10 haiku
+```
+
+## Learnings (Debugging + Reliability)
+
+- **`prd.json` is the source of truth**: tasks are only “done” when `prd.json` is updated (locks/logs can lie or go stale).
+- **Make SKIP/COMPLETE signals unambiguous**: detect `<promise>SKIP</promise>` / `<promise>COMPLETE</promise>` from assistant output only (not from tool output or embedded PRD text).
+- **Keep machine output clean**: any function used in `TASK_ID=$(...)` must emit only IDs to stdout; send logs/diagnostics to stderr.
+- **Blocked ≠ done**: when tasks remain but none are ready/claimable, wait+retry; only exit when all tasks are actually done.
+- **Require audit metadata**: include `RalphId` in `progress.txt`, and `lastUpdatedBy`/`lastUpdatedAt` in `prd.json` for traceability.
+
 ## How It Works
 
 Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git worktree, working on different tasks simultaneously. Ralphs coordinate through file-based locks to avoid working on the same task.

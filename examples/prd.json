@@ -5,7 +5,9 @@
     "description": "Add User table to schema.prisma with id, email, passwordHash, createdAt fields",
     "validation": "Verify schema.prisma contains User model with all 4 fields",
     "done": false,
-    "notes": ""
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
   },
   {
     "id": "TASK-002",
@@ -13,7 +15,9 @@
     "description": "Add POST /api/auth/login endpoint that accepts email/password and returns JWT",
     "validation": "Test with curl: curl -X POST http://localhost:3000/api/auth/login -d '{\"email\":\"test@test.com\",\"password\":\"test123\"}' returns token",
     "done": false,
-    "notes": ""
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
   },
   {
     "id": "TASK-003",
@@ -21,7 +25,9 @@
     "description": "Add POST /api/auth/logout endpoint that invalidates JWT token",
     "validation": "Verify endpoint returns 200 and subsequent requests with same token return 401",
     "done": false,
-    "notes": ""
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
   },
   {
     "id": "TASK-004",
@@ -29,6 +35,8 @@
     "description": "Add tests for login/logout endpoints covering success and error cases",
     "validation": "Run `npm test auth` and verify all tests pass with 100% coverage",
     "done": false,
-    "notes": ""
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
   }
 ]

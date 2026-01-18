@@ -1,0 +1,6 @@
+# Progress Log
+
+This file is an append-only log of completed work across ralphs.
+
+---
+

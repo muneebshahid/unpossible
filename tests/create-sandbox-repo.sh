@@ -2,16 +2,22 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 [dest] [--force]"
+  echo "Usage: $0 [dest] [--fixture <name>] [--force]"
   echo ""
   echo "Creates a throwaway sandbox repo (default: /tmp/unp) suitable for running:"
   echo "  ./unpossible.sh 2 10 haiku"
+  echo ""
+  echo "Fixtures:"
+  echo "  python-haiku-repo       (7 independent tasks)"
+  echo "  python-haiku-deps-repo  (7 tasks w/ dependsOn + SKIP flow)"
 }
 
 DEST="/tmp/unp"
 FORCE="0"
+FIXTURE="python-haiku-repo"
 
-for arg in "$@"; do
+while [ $# -gt 0 ]; do
+  arg="$1"
   case "$arg" in
     --help|-h)
       usage
@@ -19,15 +25,25 @@ for arg in "$@"; do
       ;;
     --force)
       FORCE="1"
+      shift
+      ;;
+    --fixture)
+      FIXTURE="${2:-}"
+      if [ -z "$FIXTURE" ]; then
+        echo "Error: --fixture requires a value" 1>&2
+        exit 4
+      fi
+      shift 2
       ;;
     *)
       DEST="$arg"
+      shift
       ;;
   esac
 done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FIXTURE_DIR="$REPO_ROOT/tests/fixtures/python-haiku-repo"
+FIXTURE_DIR="$REPO_ROOT/tests/fixtures/$FIXTURE"
 
 if [ ! -d "$FIXTURE_DIR" ]; then
   echo "Error: fixture directory not found: $FIXTURE_DIR" 1>&2
@@ -88,4 +104,3 @@ echo "Created sandbox repo at: $DEST"
 echo "Next:"
 echo "  cd $DEST"
 echo "  ./unpossible.sh 2 10 haiku"
-

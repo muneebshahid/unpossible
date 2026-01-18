@@ -1,0 +1,76 @@
+[
+  {
+    "id": "TASK-001",
+    "title": "Add haiku_common.normalize_line + tests",
+    "description": "Create `src/haiku_common.py` exporting `normalize_line(text: str) -> str` which trims whitespace and ensures the result is non-empty (raise ValueError if empty after trimming). Add `tests/test_haiku_common.py` (import `tests.bootstrap`) to cover trimming and empty-input error. Update `prd.json` and `progress.txt`, then commit.",
+    "validation": "python -m unittest tests.test_haiku_common && python -m unittest discover -s tests",
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  },
+  {
+    "id": "TASK-002",
+    "title": "Add haiku_winter.get_haiku (depends on common) + tests",
+    "description": "Create `src/haiku_winter.py` exporting `get_haiku() -> list[str]` (3 non-empty strings about winter). Each line MUST be passed through `haiku_common.normalize_line`. Add `tests/test_haiku_winter.py` (import `tests.bootstrap`) asserting the list shape and that at least one line contains \"winter\" (case-insensitive). Update `prd.json` and `progress.txt`, then commit.",
+    "validation": "python -m unittest tests.test_haiku_winter && python -m unittest discover -s tests",
+    "dependsOn": ["TASK-001"],
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  },
+  {
+    "id": "TASK-003",
+    "title": "Add haiku_registry.get_available (depends on winter) + tests",
+    "description": "Create `src/haiku_registry.py` exporting `get_available() -> list[str]` that returns at least `[\"winter\"]`. Add `tests/test_haiku_registry.py` (import `tests.bootstrap`) asserting \"winter\" is present. Update `prd.json` and `progress.txt`, then commit.",
+    "validation": "python -m unittest tests.test_haiku_registry && python -m unittest discover -s tests",
+    "dependsOn": ["TASK-002"],
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  },
+  {
+    "id": "TASK-004",
+    "title": "Add haiku_loader.load (depends on registry+winter) + tests",
+    "description": "Create `src/haiku_loader.py` exporting `load(name: str) -> list[str]` that uses `haiku_registry.get_available()` to validate `name` and then imports `haiku_<name>` and returns its `get_haiku()`. Add `tests/test_haiku_loader.py` (import `tests.bootstrap`) covering: `load(\"winter\")` returns 3 lines; invalid name raises ValueError. Update `prd.json` and `progress.txt`, then commit.",
+    "validation": "python -m unittest tests.test_haiku_loader && python -m unittest discover -s tests",
+    "dependsOn": ["TASK-003"],
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  },
+  {
+    "id": "TASK-005",
+    "title": "Add haiku_cli.main (intentionally missing dependsOn) + tests",
+    "description": "Create `src/haiku_cli.py` exporting `main(argv: list[str]) -> str` which expects `argv == [\"<name>\"]`, loads the haiku via `haiku_loader.load(name)`, and returns a single string joined with `\\n`. Add `tests/test_haiku_cli.py` (import `tests.bootstrap`) asserting `main([\"winter\"])` returns 3 lines. IMPORTANT: if `haiku_loader` (or any required prerequisite module) is missing, do NOT implement it here. Instead add the correct `dependsOn` to TASK-005 in `prd.json`, write a brief note to `progress.txt`, and output `<promise>SKIP</promise>`.",
+    "validation": "python -m unittest tests.test_haiku_cli && python -m unittest discover -s tests",
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  },
+  {
+    "id": "TASK-006",
+    "title": "Add haiku_spring.get_haiku (depends on common) + tests",
+    "description": "Create `src/haiku_spring.py` exporting `get_haiku() -> list[str]` (3 non-empty strings about spring). Each line MUST be passed through `haiku_common.normalize_line`. Add `tests/test_haiku_spring.py` (import `tests.bootstrap`) asserting the list shape and that at least one line contains \"spring\" (case-insensitive). Update `prd.json` and `progress.txt`, then commit.",
+    "validation": "python -m unittest tests.test_haiku_spring && python -m unittest discover -s tests",
+    "dependsOn": ["TASK-001"],
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  },
+  {
+    "id": "TASK-007",
+    "title": "Extend registry+loader+cli to support spring (intentionally missing dependsOn) + tests",
+    "description": "Update `haiku_registry.get_available()` to include \"spring\" and ensure `haiku_loader.load(\"spring\")` works. Ensure `haiku_cli.main([\"spring\"])` works as well. Add/adjust tests as needed (prefer adding assertions in existing tests). IMPORTANT: if any prerequisite tasks are not done (e.g. spring module missing), do NOT implement them here. Instead add the correct `dependsOn` to TASK-007 in `prd.json`, write a brief note to `progress.txt`, and output `<promise>SKIP</promise>`.",
+    "validation": "python -m unittest discover -s tests",
+    "done": false,
+    "notes": "",
+    "lastUpdatedBy": "",
+    "lastUpdatedAt": ""
+  }
+]

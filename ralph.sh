@@ -3,6 +3,7 @@ set -e
 
 RALPH_ID=${1:-"ralph-$$"}
 MAX_ITERATIONS=${2:-10}
+WAIT_SECONDS=${WAIT_SECONDS:-60}
 
 # Directories - set by orchestrator or use defaults
 MAIN_WORKTREE=${MAIN_WORKTREE:-"$(pwd)"}
@@ -16,12 +17,14 @@ PRD_FILE="prd.json"
 CLAUDE_MODEL="${CLAUDE_MODEL:-}"
 
 log() {
-  echo "[$RALPH_ID] $1"
+  # IMPORTANT: logs must go to stderr so command substitutions (e.g. TASK_ID=$(...))
+  # only capture machine-readable stdout values like task IDs.
+  echo "[$RALPH_ID] $1" 1>&2
 }
 
 # List task IDs that are not done and have all dependencies satisfied.
 list_ready_task_ids() {
-  local tasks_file="$RALPH_DIR/$PRD_FILE"
+  local tasks_file="$MAIN_WORKTREE/$PRD_FILE"
 
   jq -r '
     (. as $all
@@ -36,7 +39,7 @@ list_ready_task_ids() {
 
 # Print a human-readable list of blocked tasks (pending tasks with unmet dependencies).
 print_blocked_tasks() {
-  local tasks_file="$RALPH_DIR/$PRD_FILE"
+  local tasks_file="$MAIN_WORKTREE/$PRD_FILE"
 
   jq -r '
     (. as $all
@@ -53,7 +56,7 @@ print_blocked_tasks() {
 
 # Detect tasks that are in a dependency cycle (best-effort). Only used for "no ready tasks" debugging.
 list_cycle_task_ids() {
-  local tasks_file="$RALPH_DIR/$PRD_FILE"
+  local tasks_file="$MAIN_WORKTREE/$PRD_FILE"
 
   jq -r '
     def deps($m; $id):
@@ -105,7 +108,7 @@ release_task() {
 
 # Find next available pending task from tasks file (in ralph's worktree)
 find_pending_task() {
-  local tasks_file="$RALPH_DIR/$PRD_FILE"
+  local tasks_file="$MAIN_WORKTREE/$PRD_FILE"
 
   if [ ! -f "$tasks_file" ]; then
     echo ""
@@ -136,7 +139,11 @@ find_pending_task() {
       fi
     fi
 
-    echo ""
+    if [ "$pending_count" = "0" ]; then
+      echo ""
+    else
+      echo "__WAIT__"
+    fi
     return
   fi
 
@@ -147,14 +154,34 @@ find_pending_task() {
     fi
   done
 
-  echo ""
+  if [ -n "$ready_ids" ]; then
+    log "No claimable tasks (ready tasks appear locked). Ready tasks were:"
+    echo "$ready_ids" | while read -r id; do
+      [ -n "$id" ] && log "  $id"
+    done
+  fi
+
+  echo "__WAIT__"
 }
 
 # Get full task JSON by ID
 get_task_json() {
   local task_id=$1
-  local tasks_file="$RALPH_DIR/$PRD_FILE"
+  local tasks_file="$MAIN_WORKTREE/$PRD_FILE"
   jq -c ".[] | select(.id == \"$task_id\")" "$tasks_file" 2>/dev/null || echo "{}"
+}
+
+# Extract assistant text from a stream-json file and check whether it contains an exact promise line.
+stream_has_promise() {
+  local stream_file="$1"
+  local promise="$2"
+
+  jq -r '
+    select(.type == "assistant")
+    | (.message.content[]? | select(.type == "text") | .text)
+  ' "$stream_file" 2>/dev/null | \
+    sed 's/\r$//' | \
+    grep -Eq "^[[:space:]]*<promise>${promise}</promise>[[:space:]]*$"
 }
 
 # Build prompt from template
@@ -196,11 +223,14 @@ build_prompt() {
 
 log "Starting in worktree: $RALPH_DIR"
 log "Base branch: $BASE_BRANCH, max iterations: $MAX_ITERATIONS"
+log "Wait when blocked: ${WAIT_SECONDS}s"
 
 # Change to ralph directory
 cd "$RALPH_DIR"
 
-for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
+iter=0
+while true; do
+  iter=$((iter + 1))
   log "Iteration $iter: Looking for work..."
 
   # Sync with base branch to get latest task file status.
@@ -211,8 +241,14 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   TASK_ID=$(find_pending_task)
 
   if [ -z "$TASK_ID" ]; then
-    log "No pending tasks available. Exiting."
+    log "No pending tasks available (all done). Exiting."
     break
+  fi
+
+  if [ "$TASK_ID" = "__WAIT__" ]; then
+    log "Tasks remain but none are ready/claimable. Sleeping for ${WAIT_SECONDS}s..."
+    sleep "$WAIT_SECONDS"
+    continue
   fi
 
   log "Claimed task: $TASK_ID"
@@ -268,14 +304,14 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   set -e
 
   # Check for completion/skip signals in output
-  if grep -q '"COMPLETE"' "$TASK_STREAM_JSONL" 2>/dev/null; then
+  if stream_has_promise "$TASK_STREAM_JSONL" "COMPLETE"; then
     log "All tasks complete!"
     release_task "$TASK_ID"
     cp "$LOCKS_DIR/$TASK_ID/completed.json" "$TASK_LOG_DIR/completed.json" 2>/dev/null || true
     break
   fi
 
-  if grep -q '"SKIP"' "$TASK_STREAM_JSONL" 2>/dev/null; then
+  if stream_has_promise "$TASK_STREAM_JSONL" "SKIP"; then
     log "Skipped $TASK_ID"
     echo "{\"skippedAt\": \"$(date -Iseconds)\"}" > "$TASK_LOG_DIR/skipped.json"
     rm -rf "$LOCKS_DIR/$TASK_ID" 2>/dev/null || true
@@ -288,6 +324,15 @@ for ((iter=1; iter<=MAX_ITERATIONS; iter++)); do
   cp "$LOCKS_DIR/$TASK_ID/completed.json" "$TASK_LOG_DIR/completed.json" 2>/dev/null || true
 
   log "Finished $TASK_ID, looking for next task..."
+
+  if [ "$MAX_ITERATIONS" -gt 0 ] && [ "$iter" -ge "$MAX_ITERATIONS" ]; then
+    pending_count=$(jq -r '[.[] | select(.done != true)] | length' "$MAIN_WORKTREE/$PRD_FILE" 2>/dev/null || echo "0")
+    if [ "$pending_count" = "0" ]; then
+      log "Reached max iterations ($MAX_ITERATIONS) and all tasks are done. Exiting."
+      break
+    fi
+    log "Reached max iterations ($MAX_ITERATIONS) but tasks remain (pending: $pending_count). Continuing until all tasks are done."
+  fi
 done
 
 log "Ralph finished"

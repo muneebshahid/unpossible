@@ -19,11 +19,13 @@ Work ONLY on task {{TASK_ID}}.
 
 ## Non-negotiables (required for the run to make progress)
 
-1. Run the Validation commands (below) and ensure they pass.
-2. Update `prd.json`: set `"done": true` for {{TASK_ID}} and add a short implementation note in `"notes"`.
+Before you consider {{TASK_ID}} “done”, you MUST:
+
+1. Run the Validation commands (below) and ensure they pass
+2. Update `prd.json` for {{TASK_ID}} (`"done": true` and a short `"notes"` entry)
    - Also set `lastUpdatedBy` to `{{RALPH_BRANCH}}` and `lastUpdatedAt` to an ISO timestamp.
-3. Append a short entry to `progress.txt` (append-only). Include `RalphId: {{RALPH_BRANCH}}`.
-4. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`.
+3. Append a new entry to `progress.txt` (append-only). Include `RalphId: {{RALPH_BRANCH}}`.
+4. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
 
 If you do not update `prd.json`, the task will remain pending and can block progress for the whole run.
 
@@ -43,6 +45,17 @@ Verification: <what you ran / checked>
 Changes:
 - <bullet>
 ```
+
+## Dependencies (`dependsOn`)
+
+If you discover that {{TASK_ID}} depends on another task that is not yet done:
+
+1. Update {{TASK_ID}} in `prd.json` to add `dependsOn: ["TASK-XXX", ...]` and add a short note explaining why.
+   - Also set `lastUpdatedBy`/`lastUpdatedAt` when you edit the task object.
+2. Append a coordination note to `progress.txt` (include which task you were blocked on).
+3. Output `<promise>SKIP</promise>` (so the task can be retried later once dependencies are done).
+
+Important: do NOT implement the dependency work inside {{TASK_ID}}.
 
 ## Validation
 

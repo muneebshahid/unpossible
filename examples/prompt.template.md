@@ -24,6 +24,7 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 3. Implement the changes needed (stay tightly scoped to {{TASK_ID}})
 4. Verify your implementation (see Validation section below)
 5. Update `prd.json`: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
+   - Also set `lastUpdatedBy` to your ralph id (use `{{RALPH_BRANCH}}`) and `lastUpdatedAt` to an ISO timestamp
 6. Append a short entry to `progress.txt` describing what you did (include verification notes and any follow-ups)
 7. Commit your changes with message format: `feat({{TASK_ID}}): <brief description>`
 
@@ -48,15 +49,16 @@ If you discover that {{TASK_ID}} depends on another task:
 
 ### `progress.txt` Entry Format (Example)
 
-Append something like this (adapt as needed, keep it concise and append-only):
+Append something like this (use this structure for BOTH completed and skipped tasks; keep it concise and append-only):
 
 ```md
 ---
 
 ## {{TASK_ID}}: <task title>
 
-**Ralph**: {{RALPH_BRANCH}}
+**RalphId**: {{RALPH_BRANCH}}
 **When**: <YYYY-MM-DDTHH:MM:SSZ>
+**Status**: COMPLETED | SKIPPED
 **Verification**: <what you ran / checked>
 **Changes**:
 - <bullet>
@@ -64,6 +66,8 @@ Append something like this (adapt as needed, keep it concise and append-only):
 **Follow-ups** (optional):
 - <bullet>
 ```
+
+If you are skipping due to dependencies, include a short **Blocked by** note in the entry and still follow the structure above.
 
 ## Validation
 
