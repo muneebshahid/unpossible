@@ -1,131 +1,103 @@
 # Unpossible
 
+<!-- markdownlint-disable MD033 -->
 <p align="center">
   <img src="ralph.png" alt="Ralph Wiggum - That's Unpossible" width="400">
 </p>
+<!-- markdownlint-enable MD033 -->
 
 > "Me fail English? That's unpossible!" - Ralph Wiggum
 
-Run multiple Claude agents (ralphs) in parallel to work through a task list.
+Unpossible runs multiple Claude agents (ralphs) in parallel to work through a task list. Each ralph works in its own git worktree, coordinating via atomic filesystem locks.
+
+A minimal experimental agent orchestration tool—use at your own risk.
+
+**Success depends on two factors:**
+
+1. **Minimal task overlap** — Tasks that touch different files/areas parallelize well. Overlapping tasks cause merge conflicts that slow everything down.
+2. **Verifiable validation** — Each task needs clear validation criteria. Without this, ralphs may mark incomplete work as done.
 
 ## Quick Start
 
 ```bash
-# 1. Create your PRD file
+# 1. Set up required files
 cp examples/prd.json prd.json
-
-# 2. Create a progress log
 cp examples/progress.txt progress.txt
-
-# 3. Create your prompt template
 cp examples/prompt.template.md prompt.template.md
 
-# 4. Run 3 ralphs in parallel
+# 2. Run 3 ralphs in parallel
 ./unpossible.sh 3
 
-# 5. Clean up when done
+# 3. Clean up when done
 ./unpossible.sh clean
 ```
 
-## Sandbox Test Repo (for future testing)
-
-This repo includes a small, dependency-free Python fixture you can copy into `/tmp` to test Unpossible end-to-end.
-
-```bash
-./tests/create-sandbox-repo.sh /tmp/unp --force
-cd /tmp/unp
-./unpossible.sh 2 10 haiku
-```
-
-To exercise dependency handling (`dependsOn` + `<promise>SKIP</promise>`), generate the dependency fixture:
-
-```bash
-./tests/create-sandbox-repo.sh /tmp/unp --force --fixture python-haiku-deps-repo
-```
-
-If tasks are pending but blocked by dependencies, ralphs will wait and retry instead of exiting. Control the wait interval with:
-
-```bash
-WAIT_SECONDS=60 ./unpossible.sh 2 10 haiku
-```
-
-## Learnings (Debugging + Reliability)
-
-- **`prd.json` is the source of truth**: tasks are only “done” when `prd.json` is updated (locks/logs can lie or go stale).
-- **Make SKIP/COMPLETE signals unambiguous**: detect `<promise>SKIP</promise>` / `<promise>COMPLETE</promise>` from assistant output only (not from tool output or embedded PRD text).
-- **Keep machine output clean**: any function used in `TASK_ID=$(...)` must emit only IDs to stdout; send logs/diagnostics to stderr.
-- **Blocked ≠ done**: when tasks remain but none are ready/claimable, wait+retry; only exit when all tasks are actually done.
-- **Require audit metadata**: include `RalphId` in `progress.txt`, and `lastUpdatedBy`/`lastUpdatedAt` in `prd.json` for traceability.
-
 ## How It Works
-
-Unpossible spawns multiple Claude agents (called "ralphs"), each in its own git worktree, working on different tasks simultaneously. Ralphs coordinate through file-based locks to avoid working on the same task.
-
-**Success depends on task quality**: Each task must be atomic (completable independently) and verifiable (clear validation criteria). Well-defined tasks enable effective parallelization.
 
 ```text
 your-project/
-├── prd.json                   # Your task list
-├── progress.txt               # Append-only log of completed work (required)
-├── prompt.template.md         # Instructions for each ralph
+├── prd.json               # Task list (JSON array) - required
+├── progress.txt           # Append-only completion log - required
+├── prompt.template.md     # Instructions for each ralph - required
 │
-└── .unpossible/               # Runtime directory
-    ├── ralphs/                # Git worktrees (one per ralph)
-    │   ├── ralph-1/
-    │   ├── ralph-2/
-    │   └── ralph-3/
-    ├── locks/                 # Task locks (cleared on restart)
-    └── logs/                  # Per-run logs (persist across restarts)
+└── .unpossible/           # Runtime directory (auto-created)
+    ├── ralphs/            # Git worktrees (ralph-1/, ralph-2/, ...)
+    ├── locks/             # Task locks (cleared on restart)
+    └── logs/              # Per-run logs (persist across restarts)
 ```
 
-## Conventions
+**Git workflow per task:**
 
-Unpossible uses a fixed file layout:
+1. Ralph claims task via atomic `mkdir` lock
+2. Implements task in its worktree
+3. Commits changes
+4. Rebases onto latest base branch
+5. Fast-forward merges back to base
+6. Releases lock and repeats
 
-- `prd.json`: task list (JSON array)
-- `progress.txt`: append-only progress log
-- `prompt.template.md`: prompt template
+**Conflict handling:** Ralphs resolve merge conflicts autonomously during rebase, considering the other ralph's commit context.
 
 ## PRD File
 
-**CRITICAL**: Unpossible's effectiveness depends entirely on task quality. Tasks must be small, atomic, and verifiable.
-
-Your `prd.json` file should be a JSON array. Example:
+Tasks must be **atomic** (completable independently) and **verifiable** (clear validation criteria).
 
 ```json
 [
   {
     "id": "TASK-001",
     "title": "Create user schema",
-    "description": "Add User table to schema.prisma with id, email, passwordHash, createdAt fields",
+    "description": "Add User table with id, email, passwordHash, createdAt fields",
     "validation": "Verify schema.prisma contains User model with all 4 fields",
     "done": false,
-    "notes": ""
+    "dependsOn": []
   },
   {
     "id": "TASK-002",
-    "title": "Create login API endpoint",
-    "description": "Add POST /api/auth/login endpoint that accepts email/password and returns JWT",
-    "validation": "Test with curl: curl -X POST http://localhost:3000/api/auth/login -d '{\"email\":\"test@test.com\",\"password\":\"test123\"}' returns token",
+    "title": "Create login endpoint",
+    "description": "Add POST /api/auth/login returning JWT",
+    "validation": "curl -X POST localhost:3000/api/auth/login returns token",
     "done": false,
-    "notes": ""
+    "dependsOn": ["TASK-001"]
   }
 ]
 ```
 
-**Field Configuration**: `taskIdField`, `taskCompleteField`, and `taskCompleteValue` are configurable.
+**Required fields:** `id`, `done` (boolean)
 
-**Validation field** (highly recommended): Specify how the ralph should verify completion. Without validation, ralphs may mark incomplete work as done.
+**Recommended fields:**
+
+- `validation`: How to verify completion—without this, ralphs may mark incomplete work as done
+- `dependsOn`: Array of task IDs that must complete first (ralphs only claim tasks with all dependencies met)
 
 ## Prompt Template
 
-Create a markdown file with placeholders that get replaced at runtime:
+Placeholders replaced at runtime:
 
 | Placeholder | Value |
-|-------------|-------|
+| -------------------- | -------------------------------- |
 | `{{TASK_ID}}` | Current task ID |
-| `{{TASK_JSON}}` | Full JSON object of current task |
-| `{{VALIDATION_STEPS}}` | Content of `validation` field (or default message if empty) |
+| `{{TASK_JSON}}` | Full task object as JSON |
+| `{{VALIDATION_STEPS}}` | Content of `validation` field |
 | `{{RALPH_DIR}}` | Ralph's worktree path |
 | `{{MAIN_DIR}}` | Main worktree path |
 | `{{RALPH_BRANCH}}` | Ralph's branch name |
@@ -136,20 +108,23 @@ See `examples/prompt.template.md` for a complete example.
 ## Usage
 
 ```bash
-# Run N ralphs, each doing up to 10 iterations
-./unpossible.sh <N>
+./unpossible.sh <N>                      # Run N ralphs (default 10 iterations each)
+./unpossible.sh <N> <iterations>         # Custom iteration limit
+./unpossible.sh <N> <iterations> <model> # Specify Claude model (e.g., haiku)
+./unpossible.sh clean                    # Remove worktrees and locks
 
-# Run N ralphs with custom iteration limit
-./unpossible.sh <N> <iterations>
+WAIT_SECONDS=60 ./unpossible.sh 3        # Custom wait time when blocked
+```
 
-# Run N ralphs with a specific Claude model
-./unpossible.sh <N> <iterations> <model>
+## Testing
 
-# Stop all ralphs
-Ctrl+C
+```bash
+# Create test repo with independent tasks
+./tests/create-sandbox-repo.sh /tmp/unp --force
+cd /tmp/unp && ./unpossible.sh 2 10 haiku
 
-# Clean up worktrees and locks
-./unpossible.sh clean
+# Create test repo with task dependencies
+./tests/create-sandbox-repo.sh /tmp/unp --force --fixture python-haiku-deps-repo
 ```
 
 ## Requirements
@@ -159,30 +134,16 @@ Ctrl+C
 - `git` for worktree management
 - Bash 4+
 
-## Git Workflow
+## Design Notes
 
-Each ralph works on its own branch and merges back to base:
-
-1. Ralph claims a task (via atomic `mkdir`)
-2. Ralph implements the task in its worktree
-3. Ralph commits changes
-4. Ralph rebases onto latest base branch
-5. Ralph merges back (fast-forward)
-6. Ralph releases the task lock
-7. Repeat with next task
-
-## Known Limitations
-
-**Task Dependencies**: If Task B depends on Task A, a ralph working on Task B might implement both tasks, causing merge conflicts. In practice, ralphs handle these conflicts autonomously during rebase.
-
-**Possible improvements**:
-
-- Add `dependsOn` field to prd.json and check dependencies before claiming
-- Enforce strict scope in prompt template to prevent task overstepping
+- **`prd.json` is the source of truth**: Tasks are only "done" when `prd.json` is updated
+- **Blocked ≠ done**: When tasks exist but none are claimable, ralphs wait and retry
+- **Signals**: `<promise>SKIP</promise>` skips current task, `<promise>COMPLETE</promise>` exits ralph
+- **Audit trail**: Include `lastUpdatedBy`/`lastUpdatedAt` in tasks and `RalphId` in progress.txt
 
 ## Inspiration
 
-The concept of spawning multiple AI agents called "ralphs" is inspired by [Geoffrey Huntley's original post](https://ghuntley.com/ralph/) about running parallel AI coding agents.
+The concept of parallel AI agents called "ralphs" is inspired by [Geoffrey Huntley's original post](https://ghuntley.com/ralph/).
 
 ## License
 
