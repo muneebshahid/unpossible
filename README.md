@@ -14,8 +14,51 @@ A minimal experimental agent orchestration tool—use at your own risk.
 
 **Success depends on two factors:**
 
-1. **Minimal task overlap** — Tasks that touch different files/areas parallelize well. Overlapping tasks cause merge conflicts that slow everything down.
+1. **Task isolation vs. overlap strategy** — How much tasks overlap determines merge complexity (see Coordination Modes below)
 2. **Verifiable validation** — Each task needs clear validation criteria. Without this, ralphs may mark incomplete work as done.
+
+## Coordination Modes
+
+Unpossible supports two coordination strategies, configurable via `OVERLAP_MODE`:
+
+### Strict Mode (default)
+
+```bash
+./unpossible.sh 3  # OVERLAP_MODE=0 (default)
+```
+
+- Ralphs only claim tasks whose `dependsOn` are all complete
+- Ralphs skip tasks if prerequisites are missing (`<promise>SKIP</promise>`)
+- Minimal merge conflicts, but tasks can block waiting for dependencies
+- Best for: sequential workflows, tightly coupled tasks
+
+### Overlap Mode
+
+```bash
+# Use overlap mode with the overlap prompt template
+cp examples/prompt.overlap.template.md prompt.template.md
+OVERLAP_MODE=1 ./unpossible.sh 3
+```
+
+- Ralphs prefer tasks with fewer dependencies but can claim any task
+- If prerequisites don't exist, ralphs implement the **minimum necessary** to complete their own task
+- During merge conflicts, ralphs resolve by **taking the best of both implementations**
+- Tasks are never blocked; conflicts are resolved intelligently
+- Best for: loosely coupled tasks, rapid iteration, exploratory work
+
+**How overlap mode works:**
+
+1. Ralph picks task (preferring fewer incomplete `dependsOn`)
+2. Implements their task, doing minimal outside work if needed
+3. During rebase conflicts, analyzes both implementations:
+   - What did the other ralph implement?
+   - Which implementation is more complete for each concern?
+   - Merge by keeping the best aspects of both
+4. Validates **only their own task** still works after merge
+
+The "last one to merge" naturally synthesizes the best of concurrent implementations—different ralphs may have slightly different approaches, and conflict resolution produces a refined result.
+
+**Note:** The overlap prompt template (`examples/prompt.overlap.template.md`) removes strict scope enforcement and enhances conflict resolution guidance. Use the standard template for strict mode.
 
 ## Quick Start
 

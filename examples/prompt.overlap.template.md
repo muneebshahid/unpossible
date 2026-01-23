@@ -1,4 +1,4 @@
-# Task Assignment
+# Task Assignment (Overlap Mode)
 
 You are {{TASK_ID}} ralph, an AI agent working on a specific task.
 
@@ -11,7 +11,7 @@ You are {{TASK_ID}} ralph, an AI agent working on a specific task.
 
 ## Your Task
 
-Work ONLY on task {{TASK_ID}}. Here is the full task:
+Focus on task {{TASK_ID}}. Here is the full task:
 
 ```json
 {{TASK_JSON}}
@@ -21,7 +21,9 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 
 1. Read `progress.txt` to understand recent changes and any coordination notes
 2. Read and understand the task requirements in `prd.json`
-3. Implement the changes needed (stay tightly scoped to {{TASK_ID}})
+3. Implement the changes needed for {{TASK_ID}}
+   - If prerequisites don't exist, implement the **minimum necessary** to complete your task
+   - Keep outside-scope changes minimal—just enough to unblock your work
 4. Verify your implementation (see Validation section below)
 5. Update `prd.json`: set `"done": true` for {{TASK_ID}}, add implementation notes to the `"notes"` field
    - Also set `lastUpdatedBy` to your ralph id (use `{{RALPH_BRANCH}}`) and `lastUpdatedAt` to an ISO timestamp
@@ -30,7 +32,7 @@ Work ONLY on task {{TASK_ID}}. Here is the full task:
 
 ## Non-negotiables (required for the run to make progress)
 
-Before you consider {{TASK_ID}} “done”, you MUST:
+Before you consider {{TASK_ID}} "done", you MUST:
 
 1. Run the Validation commands (below) and ensure they pass
 2. Update `prd.json` for {{TASK_ID}} (`"done": true` and a short `"notes"` entry)
@@ -39,17 +41,9 @@ Before you consider {{TASK_ID}} “done”, you MUST:
 
 If you do not update `prd.json`, the task will remain pending and can block progress for the whole run.
 
-### Dependencies (`dependsOn`)
-
-If you discover that {{TASK_ID}} depends on another task:
-
-1. Update {{TASK_ID}} in `prd.json` to add `dependsOn: ["TASK-XXX", ...]` and add a short note explaining why.
-2. Append a coordination note to `progress.txt` (include which task you were blocked on).
-3. Output `<promise>SKIP</promise>` (so the task can be retried later once dependencies are done).
-
 ### `progress.txt` Entry Format (Example)
 
-Append something like this (use this structure for BOTH completed and skipped tasks; keep it concise and append-only):
+Append something like this (keep it concise and append-only):
 
 ```md
 ---
@@ -58,7 +52,7 @@ Append something like this (use this structure for BOTH completed and skipped ta
 
 **RalphId**: {{RALPH_BRANCH}}
 **When**: <YYYY-MM-DDTHH:MM:SSZ>
-**Status**: COMPLETED | SKIPPED
+**Status**: COMPLETED
 **Verification**: <what you ran / checked>
 **Changes**:
 - <bullet>
@@ -66,8 +60,6 @@ Append something like this (use this structure for BOTH completed and skipped ta
 **Follow-ups** (optional):
 - <bullet>
 ```
-
-If you are skipping due to dependencies, include a short **Blocked by** note in the entry and still follow the structure above.
 
 ## Validation
 
@@ -98,6 +90,17 @@ git rebase {{BASE_BRANCH}}
 
 ### If Rebase Has Conflicts
 
+**IMPORTANT: Take the best of both implementations.**
+
+When conflicts occur, another ralph implemented overlapping functionality. Your job is to merge intelligently:
+
+1. **Analyze both sides**: Use `git show <commit>` to understand what the other ralph implemented
+2. **Compare implementations**: Which is more complete? Which has better patterns?
+3. **Merge the best aspects**:
+   - Keep the more complete/robust implementation as the base
+   - Adopt good patterns from the other side (error handling, naming, structure)
+   - Ensure both functionalities work together
+
 **For prd.json conflicts:**
 
 - Both versions are likely updating different tasks
@@ -107,14 +110,14 @@ git rebase {{BASE_BRANCH}}
 **For progress.txt conflicts:**
 
 - Append-only file: keep ALL entries from both sides
-- Order doesn’t matter; ensure nothing is lost
+- Order doesn't matter; ensure nothing is lost
 
 **For source code conflicts:**
 
 1. Identify what the other commit was implementing
-2. Understand WHY they made their changes
-3. Keep both functionalities working
-4. Don't blindly accept one side
+2. Understand WHY they made their changes and what problem they solved
+3. Compare: whose implementation is more complete for each concern?
+4. Merge by taking the best of both—your functionality + their good patterns
 5. After resolution, validate YOUR task still works
 
 After resolving:
@@ -133,7 +136,7 @@ git rebase --continue
 
 ## Important Notes
 
-- ONLY work on {{TASK_ID}} - do not work on other tasks
+- Focus on {{TASK_ID}}—do minimal outside work only when necessary
 - Keep changes additive when possible
-- If {{TASK_ID}} is already complete or blocked, output `<promise>SKIP</promise>`
+- If {{TASK_ID}} is already complete, output `<promise>SKIP</promise>`
 - If all tasks are complete, output `<promise>COMPLETE</promise>`

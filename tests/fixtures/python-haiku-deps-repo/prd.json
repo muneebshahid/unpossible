@@ -44,8 +44,8 @@
   },
   {
     "id": "TASK-005",
-    "title": "Add haiku_cli.main (intentionally missing dependsOn) + tests",
-    "description": "Create `src/haiku_cli.py` exporting `main(argv: list[str]) -> str` which expects `argv == [\"<name>\"]`, loads the haiku via `haiku_loader.load(name)`, and returns a single string joined with `\\n`. Add `tests/test_haiku_cli.py` (import `tests.bootstrap`) asserting `main([\"winter\"])` returns 3 lines. IMPORTANT: if `haiku_loader` (or any required prerequisite module) is missing, do NOT implement it here. Instead add the correct `dependsOn` to TASK-005 in `prd.json`, write a brief note to `progress.txt`, and output `<promise>SKIP</promise>`.",
+    "title": "Add haiku_cli.main + tests",
+    "description": "Create `src/haiku_cli.py` exporting `main(argv: list[str]) -> str` which expects `argv == [\"<name>\"]`, loads the haiku via `haiku_loader.load(name)`, and returns a single string joined with `\\n`. Add `tests/test_haiku_cli.py` (import `tests.bootstrap`) asserting `main([\"winter\"])` returns 3 lines. Update `prd.json` and `progress.txt`, then commit.",
     "validation": "python -m unittest tests.test_haiku_cli && python -m unittest discover -s tests",
     "done": false,
     "notes": "",
@@ -65,8 +65,8 @@
   },
   {
     "id": "TASK-007",
-    "title": "Extend registry+loader+cli to support spring (intentionally missing dependsOn) + tests",
-    "description": "Update `haiku_registry.get_available()` to include \"spring\" and ensure `haiku_loader.load(\"spring\")` works. Ensure `haiku_cli.main([\"spring\"])` works as well. Add/adjust tests as needed (prefer adding assertions in existing tests). IMPORTANT: if any prerequisite tasks are not done (e.g. spring module missing), do NOT implement them here. Instead add the correct `dependsOn` to TASK-007 in `prd.json`, write a brief note to `progress.txt`, and output `<promise>SKIP</promise>`.",
+    "title": "Extend registry+loader+cli to support spring + tests",
+    "description": "Update `haiku_registry.get_available()` to include \"spring\" and ensure `haiku_loader.load(\"spring\")` works. Ensure `haiku_cli.main([\"spring\"])` works as well. Add/adjust tests as needed (prefer adding assertions in existing tests). Update `prd.json` and `progress.txt`, then commit.",
     "validation": "python -m unittest discover -s tests",
     "done": false,
     "notes": "",

@@ -15,6 +15,7 @@ RUN_LOG_DIR=${RUN_LOG_DIR:-"$MAIN_WORKTREE/.unpossible/logs/manual"}
 PROMPT_TEMPLATE="${PROMPT_TEMPLATE:-prompt.template.md}"
 PRD_FILE="prd.json"
 CLAUDE_MODEL="${CLAUDE_MODEL:-}"
+OVERLAP_MODE="${OVERLAP_MODE:-0}"
 
 log() {
   # IMPORTANT: logs must go to stderr so command substitutions (e.g. TASK_ID=$(...))
@@ -34,6 +35,27 @@ list_ready_task_ids() {
      | select(((.dependsOn // []) | all(. as $d | ($m[$d]? | .done) == true)))
      | .id
     )
+  ' "$tasks_file" 2>/dev/null || true
+}
+
+# List all pending task IDs sorted by number of incomplete dependencies (fewest first).
+# Used in overlap mode where ralphs can claim tasks even if dependencies aren't met.
+list_pending_task_ids_by_deps() {
+  local tasks_file="$MAIN_WORKTREE/$PRD_FILE"
+
+  jq -r '
+    . as $all
+    | reduce $all[] as $t ({}; .[$t.id]=$t) as $m
+    | [
+        $all[]
+        | select(.done != true)
+        | {
+            id: .id,
+            unmet: ((.dependsOn // []) | map(select(($m[.]? | .done) != true)) | length)
+          }
+      ]
+    | sort_by(.unmet)
+    | .[].id
   ' "$tasks_file" 2>/dev/null || true
 }
 
@@ -116,7 +138,13 @@ find_pending_task() {
   fi
 
   local ready_ids
-  ready_ids=$(list_ready_task_ids)
+
+  # In overlap mode, consider all pending tasks sorted by fewest unmet dependencies
+  if [ "$OVERLAP_MODE" = "1" ]; then
+    ready_ids=$(list_pending_task_ids_by_deps)
+  else
+    ready_ids=$(list_ready_task_ids)
+  fi
 
   if [ -z "$ready_ids" ]; then
     local pending_count
